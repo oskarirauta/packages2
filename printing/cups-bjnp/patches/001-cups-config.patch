@@ -1,0 +1,24 @@
+--- a/configure.ac.orig	2021-03-09 04:54:52.137674186 +0200
++++ b/configure.ac	2021-03-09 04:57:23.871010004 +0200
+@@ -72,7 +72,7 @@
+ 
+ ## find cups-configuration
+ AC_MSG_CHECKING(cups development support)
+-if test -n "`cups-config --build 2> /dev/null`"; then
++if test -n "`$(STAGING_DIR)/usr/lib/cups/bin/cups-config --build 2> /dev/null`"; then
+ 	cups_config_found=yes
+         AC_MSG_RESULT($cups_config_found)
+ else
+@@ -93,9 +93,9 @@
+ else
+ 	AC_MSG_ERROR([cups backend directory not found!])
+ fi
+-AC_SUBST([CUPS_CFLAGS], ["`cups-config --cflags`"])
+-AC_SUBST([CUPS_LIBS], ["`cups-config --libs`"])
+-AC_SUBST([CUPS_LDFLAGS], ["`cups-config --ldflags`"])
++CUPS_CFLAGS="-I$(STAGING_DIR)/usr/include/cups"
++CUPS_LIBS="-lcups"
++CUPS_LDFLAGS="-L$(STAGING_DIR)/usr/lib"
+ 
+ ## header file that contains output from configure
+ 

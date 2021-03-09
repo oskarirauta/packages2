@@ -1,0 +1,43 @@
+From 3ac015ee410f1b05c949b46224b42efbbffbce40 Mon Sep 17 00:00:00 2001
+From: Giuseppe Scrivano <gscrivan@redhat.com>
+Date: Wed, 24 Feb 2021 21:18:22 +0100
+Subject: [PATCH] close_fds: fix close of external fds
+
+commit 0f092d5446fdadb761b8143b5c4b1d1ac9793f29 introduced the
+regression.
+
+Closes: https://github.com/containers/conmon/issues/240
+
+Signed-off-by: Giuseppe Scrivano <gscrivan@redhat.com>
+---
+ src/close_fds.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/src/close_fds.c b/src/close_fds.c
+index 65246db..ef29c01 100644
+--- a/src/close_fds.c
++++ b/src/close_fds.c
+@@ -32,7 +32,6 @@ static void __attribute__((constructor)) init()
+ 	ssize_t size = 0;
+ 	DIR *d;
+ 
+-	/* Store how many FDs were open before the Go runtime kicked in.  */
+ 	d = opendir("/proc/self/fd");
+ 	if (!d)
+ 		return;
+@@ -74,10 +73,10 @@ void close_other_fds()
+ {
+ 	int fd;
+ 
+-	for (fd = 3; fd < open_files_max_fd; fd++) {
+-		if (open_files_set == NULL || FD_ISSET(fd % FD_SETSIZE, &(open_files_set[fd / FD_SETSIZE])))
+-			if (fd == sync_pipe_fd || fd == attach_pipe_fd || fd == dev_null_r || fd == dev_null_w || fd == oom_cgroup_fd
+-			    || fd == oom_event_fd)
+-				close(fd);
++	if (open_files_set == NULL)
++		return;
++	for (fd = 3; fd <= open_files_max_fd; fd++) {
++		if (FD_ISSET(fd % FD_SETSIZE, &(open_files_set[fd / FD_SETSIZE])))
++			close(fd);
+ 	}
+ }
