@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dockerd
 PKG_VERSION:=20.10.4
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
@@ -94,13 +94,15 @@ define Build/Prepare
 	)
 endef
 
-BUILDTAGS:=
-ifeq ($(KERNEL_SECCOMP),y)
-BUILDTAGS += seccomp
-endif
-ifeq ($(CONFIG_SELINUX),y)
-BUILDTAGS += selinux
-endif
+#BUILDTAGS:=
+#ifeq ($(KERNEL_SECCOMP),y)
+#BUILDTAGS += seccomp
+#endif
+#ifeq ($(CONFIG_SELINUX),y)
+#BUILDTAGS += selinux
+#endif
+
+BUILDTAGS:=seccomp selinux
 
 define Build/Compile
 	( \
