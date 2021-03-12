@@ -1,0 +1,11 @@
+--- a/hack/dockerfile/install/runc.installer
++++ b/hack/dockerfile/install/runc.installer
+@@ -4,7 +4,7 @@
+ # The version of runc should match the version that is used by the containerd
+ # version that is used. If you need to update runc, open a pull request in
+ # the containerd project first, and update both after that is merged.
+-: ${RUNC_COMMIT:=12644e614e25b05da6fd08a38ffa0cfe1903fdec} # v1.0.0-rc93
++: ${RUNC_COMMIT:=249bca0a1316129dcd5bd38b5d75572274181cb5}
+ 
+ install_runc() {
+ 	# If using RHEL7 kernels (3.10.0 el7), disable kmem accounting/limiting
