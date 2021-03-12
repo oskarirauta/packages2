@@ -1,0 +1,11 @@
+--- a/Makefile
++++ b/Makefile
+@@ -24,7 +24,7 @@
+ # Top level targets
+ ###########################################################################
+ 
+-all: build check clean
++all: build-local check-local clean
+ 
+ all-local: build-local check-local clean
+ 

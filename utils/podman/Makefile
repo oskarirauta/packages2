@@ -8,12 +8,9 @@ PKG_LICENSE_FILES:=LICENSE
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/containers/podman.git
-PKG_SOURCE_DATE:=2021-03-07
-PKG_SOURCE_VERSION:=b7c00f2cc03499d5d385a7aa7e8cd35d0ab994d7
+PKG_SOURCE_DATE:=2021-03-11
+PKG_SOURCE_VERSION:=8d33bfabaa20612718d909494c2ceec26482d279
 PKG_MIRROR_HASH:=skip
-#0193500a32fbf3bf49e640f7c2911c8db9d3ca601a58fac758102360436477e1
-
-PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 
 PKG_BUILD_DEPENDS:=golang/host protobuf/host
 PKG_BUILD_PARALLEL:=1
@@ -46,7 +43,7 @@ define Package/podman
   CATEGORY:=Utilities
   TITLE:=Podman
   URL:=https://podman.io
-  DEPENDS:=$(GO_ARCH_DEPENDS) +conmon +cni +cni-plugins +btrfs-progs +glib2 +gnupg2 +iptables +libgpg-error +libseccomp +libgpgme +nsenter +zoneinfo-simple +runc +uxc +cgroupfs-mount +iptables-mod-extra +iptables-mod-conntrack-label +kmod-veth +kmod-tun +kmod-fs-btrfs +libselinux
+  DEPENDS:=$(GO_ARCH_DEPENDS) +conmon +cni +cni-plugins +btrfs-progs +glib2 +gnupg2 +iptables +libgpg-error +libseccomp +libgpgme +nsenter +zoneinfo-simple +runc +uxc +cgroupfs-mount +iptables-mod-extra +iptables-mod-conntrack-label +kmod-nf-nat +kmod-veth +kmod-tun +kmod-nf-conntrack-netlink +kmod-nf-ipvs +kmod-ikconfig +kmod-fs-btrfs +libselinux
 endef
 
 define Package/podman-docker
