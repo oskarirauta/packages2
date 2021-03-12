@@ -13,7 +13,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://poppler.freedesktop.org/
-PKG_HASH:=b11cc0408b4ad3809fa455d7b3d5ade9
+PKG_HASH:=5cefc01aa0184bd92b0b3999922b62cf09599ebb3d95f553c2f3de02738effc6
 
 include $(INCLUDE_DIR)/package.mk
 
