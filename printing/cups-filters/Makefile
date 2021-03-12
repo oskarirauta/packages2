@@ -14,7 +14,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://www.openprinting.org/download/cups-filters
-PKG_MD5SUM:=e4150902809c58dfff7089c9345f196ecd88e38bce2be4800fa4811a0902057d
+PKG_HASH:=e4150902809c58dfff7089c9345f196ecd88e38bce2be4800fa4811a0902057d
 
 include $(INCLUDE_DIR)/package.mk
 
