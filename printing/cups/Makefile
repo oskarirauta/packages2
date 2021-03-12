@@ -24,7 +24,7 @@ PKG_INSTALL:=1
 define Package/cups
   SECTION:=print
   CATEGORY:=Printing
-  DEPENDS:=+libcups +cups-filters +libpaper +libacl +libstdcpp
+  DEPENDS:=+libcups +libpaper +libacl +libstdcpp
   TITLE:=Common UNIX Printing System (daemon)
   URL:=http://www.cups.org/
 endef
@@ -203,5 +203,5 @@ define Build/InstallDev
 
 endef
 
-$(eval $(call BuildPackage,cups))
 $(eval $(call BuildPackage,libcups))
+$(eval $(call BuildPackage,cups))
