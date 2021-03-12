@@ -1,26 +1,25 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libnetwork
+PKG_VERSION:=0.3
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
-GO_PKG:=github.com/docker/libnetwork
-GO_PKG_BUILD_PKG:= \
-  $(GO_PKG)/cmd/proxy \
-  $(GO_PKG)/cmd/dnet
-
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://$(GO_PKG)
+PKG_SOURCE_URL:=https://github.com/moby/libnetwork.git
 PKG_SOURCE_VERSION:=b3507428be5b458cb0e2b4086b13531fb0706e46
-PKG_SOURCE_DATE:=2021-01-25
-PKG_MIRROR_HASH:=bf2863f2781cb7a2eaae048f37103474c3e73f6a2a622af4cd6aa45a117eb08b
-
-PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
+PKG_SOURCE_DATE:=2021-03-11
+PKG_MIRROR_HASH:=e0e71ba6a6816b4dc9866d87abec955ee25de7f3f2c1241432ed38a3de74319a
 
 PKG_BUILD_DEPENDS:=golang/host
-PKG_BUILD_PARALLEL:=1
+PKG_BUILD_PARALLEL:=0
 PKG_USE_MIPS16:=0
+
+GO_PKG:=github.com/docker/libnetwork
+GO_PKG_BUILD_PKG:= \
+  github.com/docker/libnetwork/cmd/proxy \
+  github.com/docker/libnetwork/cmd/dnet
 
 include $(INCLUDE_DIR)/package.mk
 include ../../../packages/lang/golang/golang-package.mk
@@ -29,7 +28,7 @@ define Package/libnetwork
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=networking for containers
-  URL:=https://github.com/docker/libnetwork
+  URL:=https://github.com/moby/libnetwork
   DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
 
@@ -39,6 +38,11 @@ The goal of libnetwork is to deliver a robust Container Network Model that provi
 endef
 
 GO_PKG_BUILD_VARS += GO111MODULE=auto
+GO_PKG_INSTALL_ALL:=1
+MAKE_PATH=$(GO_PKG_WORK_DIR_NAME)/build/src/$(GO_PKG)
+MAKE_VARS += $(GO_PKG_VARS)
+MAKE_FLAGS += COMMIT=$(PKG_SOURCE_VERSION)
+MAKE_FLAGS += all-local
 
 define Package/libnetwork/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
