@@ -6,14 +6,11 @@ PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_GIT_URL:=github.com/moby/moby
-PKG_GIT_REF:=v$(PKG_VERSION)
-PKG_SOURCE_URL:=https://codeload.$(PKG_GIT_URL)/tar.gz/$(PKG_GIT_REF)?
-PKG_HASH:=skip
-PKG_GIT_SHORT_COMMIT:=4bbc52c # SHA1 used within the docker executables
-
-PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/moby/moby.git
+PKG_SOURCE_DATE:=2021-03-12
+PKG_SOURCE_VERSION:=4648e8bc6fdcbeee867270578afd1fd8f06a03ab
+PKG_MIRROR_HASH:=skip
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
