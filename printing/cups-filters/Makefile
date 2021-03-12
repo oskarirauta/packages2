@@ -21,16 +21,12 @@ include $(INCLUDE_DIR)/package.mk
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=0
 
-define Package/cups-filters/Default
-  URL:=http://www.cups.org/
+define Package/cups-filters
   SECTION:=print
   CATEGORY:=Printing
-endef
-
-define Package/cups-filters
-$(call Package/cups-filters/Default)
   DEPENDS:=+libcups +libcups-filters +glib2
   TITLE:=OpenPrinting CUPS Filters
+  URL:=http://www.cups.org/
 endef
 
 define Package/cups-filters/description
@@ -38,10 +34,12 @@ define Package/cups-filters/description
 endef
 
 define Package/libcups-filters
-$(call Package/cups/Default)
+  SECTION:=print
+  CATEGORY:=Printing
   SUBMENU:=Libraries
   DEPENDS:=+libcups +libiconv-full +lcms2 +dejavu-fonts-ttf-DejaVuSans +libqpdf +poppler +fontconfig
   TITLE:=OpenPrinting CUPS Filters library
+  URL:=http://www.cups.org/
 endef
 
 define Package/libcups-filters/description
