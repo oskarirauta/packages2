@@ -1,0 +1,11 @@
+--- a/configure
++++ b/configure
+@@ -12342,7 +12342,7 @@
+ shlibpath_overrides_runpath=unknown
+ version_type=none
+ dynamic_linker="$host_os ld.so"
+-sys_lib_dlsearch_path_spec="/lib /usr/lib"
++sys_lib_dlsearch_path_spec=""
+ need_lib_prefix=unknown
+ hardcode_into_libs=no
+ 

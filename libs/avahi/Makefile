@@ -23,6 +23,7 @@ PKG_CPE_ID:=cpe:/a:avahi:avahi
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
+PKG_FIXUP:=patch-libtool autoreconf
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -78,14 +79,14 @@ $(call Package/avahi/Default/description)
  DHCP server.
 endef
 
-#define Package/avahi-dbus-daemon
-#  $(call Package/avahi/Default)
-#  PROVIDES:=avahi-daemon
-#  VARIANT:=dbus
-#  SUBMENU:=IP Addresses and Names
-#  DEPENDS:=+libavahi-dbus-support +libexpat +librt +libdaemon
-#  TITLE+= (daemon)
-#endef
+define Package/avahi-dbus-daemon
+  $(call Package/avahi/Default)
+  PROVIDES:=avahi-daemon
+  VARIANT:=dbus
+  SUBMENU:=IP Addresses and Names
+  DEPENDS:=+libavahi-dbus-support +libexpat +librt +libdaemon
+  TITLE+= (daemon)
+endef
 
 define Package/avahi-nodbus-daemon
   $(call Package/avahi/Default)
@@ -162,12 +163,12 @@ $(call Package/avahi/Default/description)
  in a DHCP-like fashion. Especially useful on IPv6.
 endef
 
-#define Package/libavahi-dbus-support
-#  $(call Package/libavahi/Default)
-#  VARIANT:=dbus
-#  DEPENDS:=+dbus
-#  TITLE+= (D-Bus support)
-#endef
+define Package/libavahi-dbus-support
+  $(call Package/libavahi/Default)
+  VARIANT:=dbus
+  DEPENDS:=+dbus
+  TITLE+= (D-Bus support)
+endef
 
 define Package/libavahi-nodbus-support
   $(call Package/libavahi/Default)
@@ -198,14 +199,14 @@ $(call Package/libavahi/description)
  it does not generate a separate binary of its own.
 endef
 
-#define Package/libavahi-client
-#  $(call Package/avahi/Default)
-#  SECTION:=libs
-#  CATEGORY:=Libraries
-#  VARIANT:=dbus
-#  DEPENDS:=+avahi-dbus-daemon
-#  TITLE+= (libavahi-client library)
-#endef
+define Package/libavahi-client
+  $(call Package/avahi/Default)
+  SECTION:=libs
+  CATEGORY:=Libraries
+  VARIANT:=dbus
+  DEPENDS:=+avahi-dbus-daemon
+  TITLE+= (libavahi-client library)
+endef
 
 define Package/libavahi-client/description
 $(call Package/avahi/Default/description)
@@ -216,14 +217,14 @@ $(call Package/avahi/Default/description)
  For more information please see the avahi documentation.
 endef
 
-#define Package/libavahi-compat-libdnssd
-#  $(call Package/avahi/Default)
-#  SECTION:=libs
-#  CATEGORY:=Libraries
-#  VARIANT:=dbus
-#  DEPENDS:=+libavahi-client
-#  TITLE+= (libdnssd)
-#endef
+define Package/libavahi-compat-libdnssd
+  $(call Package/avahi/Default)
+  SECTION:=libs
+  CATEGORY:=Libraries
+  VARIANT:=dbus
+  DEPENDS:=+libavahi-client
+  TITLE+= (libdnssd)
+endef
 
 define Package/libavahi-compat-libdnssd/description
 $(call Package/avahi/Default/description)
@@ -233,13 +234,13 @@ $(call Package/avahi/Default/description)
  For more information please see the avahi documentation.
 endef
 
-#define Package/avahi-utils
-#  $(call Package/avahi/Default)
-#  SUBMENU:=IP Addresses and Names
-#  VARIANT:=nodbus
-#  DEPENDS:=+libavahi-client +libgdbm
-#  TITLE+= (utilities)
-#endef
+define Package/avahi-utils
+  $(call Package/avahi/Default)
+  SUBMENU:=IP Addresses and Names
+  VARIANT:=dbus
+  DEPENDS:=+libavahi-client +libgdbm
+  TITLE+= (utilities)
+endef
 
 define Package/avahi-utils/description
 $(call Package/avahi/Default/description)
@@ -292,17 +293,17 @@ CONFIGURE_ARGS += \
 	--with-autoipd-user=nobody \
 	--with-autoipd-group=nogroup
 
-#ifeq ($(BUILD_VARIANT),dbus)
-#ifneq ($(CONFIG_PACKAGE_libavahi-compat-libdnssd),)
+ifeq ($(BUILD_VARIANT),dbus)
+ifneq ($(CONFIG_PACKAGE_libavahi-compat-libdnssd),)
 CONFIGURE_ARGS += \
 	--enable-compat-libdns_sd
-#endif
-#CONFIGURE_ARGS += \
-#	--enable-dbus
-#else
+endif
+CONFIGURE_ARGS += \
+	--enable-dbus
+else
 CONFIGURE_ARGS += \
 	--disable-dbus
-#endif
+endif
 
 CONFIGURE_VARS+= \
 	CFLAGS="$$$$CFLAGS -DNDEBUG -DDISABLE_SYSTEMD" \
@@ -313,11 +314,11 @@ define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libavahi-* $(1)/usr/lib/
-#ifneq ($(CONFIG_PACKAGE_libavahi-compat-libdnssd),)
-#ifeq ($(BUILD_VARIANT),dbus)
-#	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libdns_sd* $(1)/usr/lib/
-#endif
-#endif
+ifneq ($(CONFIG_PACKAGE_libavahi-compat-libdnssd),)
+ifeq ($(BUILD_VARIANT),dbus)
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libdns_sd* $(1)/usr/lib/
+endif
+endif
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/* $(1)/usr/lib/pkgconfig/
 endef
@@ -327,28 +328,28 @@ define Package/libavahi/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libavahi-{common,core}.so.* $(1)/usr/lib/
 endef
 
-#define Package/libavahi-dbus-support/install
-#	$(call Package/libavahi/install,$(1))
-#	$(INSTALL_DIR) $(1)/etc/dbus-1/system.d
-#	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/dbus-1/system.d/* $(1)/etc/dbus-1/system.d
-#endef
+define Package/libavahi-dbus-support/install
+	$(call Package/libavahi/install,$(1))
+	$(INSTALL_DIR) $(1)/etc/dbus-1/system.d
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/dbus-1/system.d/* $(1)/etc/dbus-1/system.d
+endef
 
 Package/libavahi-nodbus-support/install=$(Package/libavahi/install)
 
-#define Package/libavahi-client/install
-#	$(INSTALL_DIR) $(1)/usr/lib
-#	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libavahi-client.so.* $(1)/usr/lib/
-#endef
+define Package/libavahi-client/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libavahi-client.so.* $(1)/usr/lib/
+endef
 
-#define Package/libavahi-compat-libdnssd/install
-#	$(INSTALL_DIR) $(1)/usr/lib
-#	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libdns_sd.so* $(1)/usr/lib/
-#endef
+define Package/libavahi-compat-libdnssd/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libdns_sd.so* $(1)/usr/lib/
+endef
 
-#define Package/avahi-utils/install
-#	$(INSTALL_DIR) $(1)/usr/bin
-#	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
-#endef
+define Package/avahi-utils/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
+endef
 
 define Package/avahi-autoipd/install
 	$(INSTALL_DIR) $(1)/etc/avahi
@@ -391,13 +392,13 @@ define Package/avahi-dnsconfd/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/avahi-dnsconfd $(1)/usr/sbin/
 endef
 
-#$(eval $(call BuildPackage,libavahi-client))
-#$(eval $(call BuildPackage,libavahi-compat-libdnssd))
-#$(eval $(call BuildPackage,avahi-utils))
-#$(eval $(call BuildPackage,libavahi-dbus-support))
+$(eval $(call BuildPackage,libavahi-client))
+$(eval $(call BuildPackage,libavahi-compat-libdnssd))
+$(eval $(call BuildPackage,avahi-utils))
+$(eval $(call BuildPackage,libavahi-dbus-support))
 $(eval $(call BuildPackage,libavahi-nodbus-support))
 $(eval $(call BuildPackage,avahi-autoipd))
-#$(eval $(call BuildPackage,avahi-dbus-daemon))
+$(eval $(call BuildPackage,avahi-dbus-daemon))
 $(eval $(call BuildPackage,avahi-nodbus-daemon))
 $(eval $(call BuildPackage,avahi-daemon-service-http))
 $(eval $(call BuildPackage,avahi-daemon-service-ssh))
