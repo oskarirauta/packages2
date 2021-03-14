@@ -24,7 +24,7 @@ PKG_INSTALL:=1
 define Package/cups
   SECTION:=print
   CATEGORY:=Printing
-  DEPENDS:=+libcups +libpaper +libacl +libstdcpp +libavahi-client +libavahi-dbus-support
+  DEPENDS:=+libcups +libpaper +libacl +libstdcpp
   TITLE:=Common UNIX Printing System (daemon)
   URL:=http://www.cups.org/
 endef
@@ -45,7 +45,7 @@ define Package/libcups
   SECTION:=print
   CATEGORY:=Printing
   SUBMENU:=Libraries
-  DEPENDS:=+zlib +libpthread +mdnsd +libjpeg +libpng +libusb-1.0
+  DEPENDS:=+zlib +libpthread +mdnsd +libjpeg +libpng +libusb-1.0 +libavahi-client +libavahi-dbus-support
   TITLE:=Common UNIX Printing System - Core library
   URL:=http://www.cups.org/
 endef
@@ -99,6 +99,7 @@ define Build/Compile
 		STRIP="/bin/true" \
 		all install
 	rm -rf $(PKG_BUILD_DIR)/ipkg-install/etc/cups/ppd $(PKG_BUILD_DIR)/ipkg-install/etc/cups/ssl
+	cp $(PKG_INSTALL_DIR)/usr/lib64/** $(PKG_INSTALL_DIR)/usr/lib/
 endef
 
 define Package/cups/install
