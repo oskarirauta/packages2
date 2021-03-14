@@ -24,7 +24,7 @@ PKG_INSTALL:=1
 define Package/cups
   SECTION:=print
   CATEGORY:=Printing
-  DEPENDS:=+libcups +libpaper +libacl +libstdcpp
+  DEPENDS:=+libcups +libpaper +libacl +libstdcpp +libavahi-client +libavahi-dbus-support
   TITLE:=Common UNIX Printing System (daemon)
   URL:=http://www.cups.org/
 endef
