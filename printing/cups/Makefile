@@ -16,6 +16,7 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-source.tar.gz
 PKG_SOURCE_URL:=https://github.com/apple/cups/releases/download/v$(PKG_VERSION)/
 PKG_HASH:=261fd948bce8647b6d5cb2a1784f0c24cc52b5c4e827b71d726020bcc502f3ee
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 PKG_FIXUP:=autoreconf
@@ -90,6 +91,33 @@ CONFIGURE_ARGS+= \
 		--enable-static \
 		UNAME="Linux" \
 		LIBS="$(TARGET_LDFLAGS) -lz -lpng -ljpeg"
+
+HOST_CONFIGURE_ARGS += \
+	--oldincludedir=$(HOST_BUILD_PREFIX)/include \
+	--datarootdir=$(HOST_BUILD_PREFIX)/share \
+	--datadir=$(HOST_BUILD_PREFIX)/share \
+	--with-icondir=$(HOST_BUILD_PREFIX)/share/icons \
+	--with-menudir=$(HOST_BUILD_PREFIX)/share/applications \
+	--disable-libusb \
+	--without-rcdir \
+	--without-xinetd \
+	--disable-pam \
+	--disable-libpaper \
+	--disable-ssl \
+	--disable-gnutls \
+	--disable-gssapi \
+	--disable-launchd \
+	--disable-avahi \
+	--disable-systemd \
+	--disable-webif \
+	--disable-tcp-wrappers \
+	--disable-acl \
+	--disable-dbus \
+	--disable-dnssd \
+	--disable-cdsassl \
+	--disable-browsing \
+	UNAME="Linux" \
+	LIBS="$(HOST_LDFLAGS)"
 
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
@@ -206,3 +234,4 @@ endef
 
 $(eval $(call BuildPackage,libcups))
 $(eval $(call BuildPackage,cups))
+$(eval $(call HostBuild))
