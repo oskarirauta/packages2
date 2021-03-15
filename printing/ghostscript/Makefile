@@ -98,7 +98,7 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/ghostscript $(1)/usr/lib
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libgs*.so** \
 		$(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/ghostscript/*.h $(1)/usr/include/ghostscript/
 endef
 
 $(eval $(call BuildPackage,ghostscript))
