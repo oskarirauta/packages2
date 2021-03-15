@@ -92,6 +92,7 @@ define Package/ghostscript/install
 		$(1)/usr/lib/ghostscript/lib/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/** \
 		$(1)/usr/bin/
+	$(LN) gsc $(1)/usr/bin/gs
 endef
 
 define Build/InstallDev
