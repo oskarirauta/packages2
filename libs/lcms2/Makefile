@@ -17,6 +17,7 @@ PKG_HASH:=18663985e864100455ac3e507625c438c3710354d85e5cbb7cd4043e11fe10f5
 
 PKG_INSTALL:=1
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 define Package/lcms2
@@ -36,6 +37,10 @@ CONFIGURE_ARGS+= \
 	--without-tiff \
 	--with-fastfloat
 
+HOST_CONFIGURE_ARGS+= \
+	--without-tiff \
+	--without-jpeg
+
 define Package/lcms2/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
@@ -52,3 +57,4 @@ define Build/InstallDev
 endef
 
 $(eval $(call BuildPackage,lcms2))
+$(eval $(call HostBuild))
