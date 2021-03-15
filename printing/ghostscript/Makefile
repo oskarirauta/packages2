@@ -18,7 +18,6 @@ PKG_HASH:=96d04e4e464bddb062c1774ea895c4f1c1c94e6c4b62f5d32218ebd44dd65ba1
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
-#PKG_BUILD_DEPENDS:=ghostscript/host
 PKG_INSTALL:=1
 
 define Package/ghostscript
