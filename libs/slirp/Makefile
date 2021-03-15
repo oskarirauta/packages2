@@ -21,7 +21,7 @@ PKG_BUILD_DEPENDS:=meson/host
 PKG_BUILD_DIR=$(BUILD_DIR)/lib$(PKG_NAME)-v$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include ../../devel/meson/meson.mk
+include ../../../packages/devel/meson/meson.mk
 
 define Package/slirp
   SECTION:=libs
