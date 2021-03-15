@@ -10,12 +10,15 @@ PKG_VERSION:=9.53.3
 PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/ghostpdl-$(PKG_VERSION)
+HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/ghostpdl-$(PKG_VERSION)
 PKG_SOURCE:=ghostpdl-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs9533/
 PKG_HASH:=96d04e4e464bddb062c1774ea895c4f1c1c94e6c4b62f5d32218ebd44dd65ba1
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
+#PKG_BUILD_DEPENDS:=ghostscript/host
 PKG_INSTALL:=1
 
 define Package/ghostscript
@@ -53,6 +56,14 @@ CONFIGURE_ARGS += \
 	--with-cups-serverbin=/usr/lib/cups \
 	--with-cups-serverroot=/etc/cups \
 	--with-cups-datadir=/usr/share/cups
+
+HOST_CONFIGURE_ARGS += \
+	--with-drivers=FILES \
+	--without-x \
+	--without-luratech \
+	--disable-compile-inits \
+	--disable-gtk \
+	--without-versioned-path
 
 define Build/Prepare
 	$(Build/Prepare/Default)
@@ -103,3 +114,4 @@ define Build/InstallDev
 endef
 
 $(eval $(call BuildPackage,ghostscript))
+$(eval $(call HostBuild))
