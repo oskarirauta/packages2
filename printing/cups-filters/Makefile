@@ -16,10 +16,12 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://www.openprinting.org/download/cups-filters
 PKG_HASH:=e4150902809c58dfff7089c9345f196ecd88e38bce2be4800fa4811a0902057d
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=0
+HOST_BUILD_DEPENDS:=cups/host freetype/host ghostscript/host lcms2/host fontconfig/host libjpeg-turbo/host qpdf/host poppler/host
 
 define Package/cups-filters
   SECTION:=print
@@ -54,6 +56,11 @@ TARGET_CFLAGS += -std=gnu11 -D_GNU_SOURCE
 TARGET_CXXFLAGS += -D_GNU_SOURCE
 TARGET_LDFLAGS += -Wl,--as-needed,-rpath-link=$(STAGING_DIR)/usr/lib -L$(STAGING_DIR)/usr/lib/libiconv-full/lib -lcups -liconv
 
+#HOST_LDFLAGS+= -L$(BUILD_DIR_HOST)/libjpeg-turbo-2.0.6/lib
+# Won't fix the issue, copy from that directory directly to staging_dir/hostpkg/lib
+
+HOST_LDFLAGS+= -L$(HOST_BUILD_PREFIX)/lib64
+
 CONFIGURE_ARGS += \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
@@ -82,6 +89,33 @@ CONFIGURE_ARGS += \
 		--with-test-font-path=/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf \
 		UNAME="Linux" \
 		LIBS="$(TARGET_LDFLAGS) -lz -lpng -ljpeg"
+
+HOST_CONFIGURE_ARGS += \
+		--disable-options-checking \
+		--oldincludedir=$(HOST_BUILD_PREFIX)/include \
+		--datarootdir=$(HOST_BUILD_PREFIX)/share \
+		--datadir=$(HOST_BUILD_PREFIX)/share \
+		--enable-driverless \
+		--disable-pclm \
+		--disable-poppler \
+		--disable-mutool \
+		--disable-braille \
+		--disable-imagefilters \
+		--with-rcdir=no \
+		--without-rcdir \
+		--without-rclevels \
+		--disable-avahi \
+		--disable-ldap \
+		--disable-dbus \
+		--disable-saving-created-queues \
+		--without-tiff \
+		--without-php \
+		--without-jpeg \
+		--without-png \
+		--without-freetype \
+		--with-pdftops=pdftops \
+		UNAME="Linux" \
+		LIBS="$(HOST_LDFLAGS)"
 
 define Package/libcups-filters/install
 	$(INSTALL_DIR) $(1)/usr/lib
@@ -147,3 +181,4 @@ endef
 
 $(eval $(call BuildPackage,cups-filters))
 $(eval $(call BuildPackage,libcups-filters))
+$(eval $(call HostBuild))
