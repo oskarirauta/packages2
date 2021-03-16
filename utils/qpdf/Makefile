@@ -17,7 +17,10 @@ PKG_HASH:=4649c66ddb3a4fc4b18927667fd3ae20a9edfbbdc1017ee1ed1e548d3abe00d1
 
 PKG_INSTALL:=1
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
+
+HOST_BUILD_DEPENDS:=libjpeg-turbo/host
 
 define Package/qpdf
   SECTION:=utils
@@ -58,6 +61,18 @@ CONFIGURE_ARGS+= \
 	--disable-crypto-gnutls \
 	--disable-crypto-openssl
 
+HOST_CONFIGURE_ARGS+= \
+	--disable-doc-maintenance \
+	--disable-html-doc \
+	--disable-pdf-doc \
+	--disable-validate-doc \
+	--with-random=/dev/urandom \
+	--disable-check-autofiles \
+	--disable-crypto-gnutls \
+	--disable-crypto-openssl
+
+HOST_LDFLAGS+= -L$(BUILD_DIR_HOST)/libjpeg-turbo-2.0.6/lib
+
 define Build/Compile
 	$(call Build/Compile/Default, LIBTOOL="./libtool --tag=CXX")
 endef
@@ -85,3 +100,4 @@ endef
 
 $(eval $(call BuildPackage,qpdf))
 $(eval $(call BuildPackage,libqpdf))
+$(eval $(call HostBuild))
