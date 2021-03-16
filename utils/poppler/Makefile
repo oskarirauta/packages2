@@ -15,9 +15,11 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://poppler.freedesktop.org/
 PKG_HASH:=5cefc01aa0184bd92b0b3999922b62cf09599ebb3d95f553c2f3de02738effc6
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 PKG_INSTALL:=1
+HOST_BUILD_DEPENDS:=fontconfig/host libjpeg-turbo/host lcms2/host
 
 define Package/poppler
   SECTION:=utils
@@ -52,6 +54,14 @@ CONFIGURE_ARGS+= \
 	--disable-gtk-test \
 	--with-font-configuration=fontconfig
 
+HOST_CONFIGURE_ARGS += \
+	--disable-libopenjpeg --disable-libtiff --without-x \
+	--disable-gtk-test --disable-poppler-qt4 --disable-poppler-qt5 \
+	--disable-gtk-doc-html --enable-gtk-doc-html=no --enable-poppler-cpp \
+	--enable-xpdf-headers --enable-zlib --enable-libjpeg --enable-cms=lcms2 \
+	--disable-gtk-doc --disable-gtk-doc-html --disable-gtk-doc-pdf \
+	--disable-gtk-test --with-font-configuration=fontconfig
+
 define Package/poppler/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
@@ -70,3 +80,4 @@ define Build/InstallDev
 endef
 
 $(eval $(call BuildPackage,poppler))
+$(eval $(call HostBuild))
