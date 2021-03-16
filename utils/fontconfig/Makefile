@@ -22,6 +22,7 @@ PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_DEPENDS:=gperf/host
 
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 define Package/fontconfig
@@ -43,6 +44,11 @@ CONFIGURE_ARGS+= \
 
 CONFIGURE_VARS+= \
 	ac_cv_prog_HASDOCBOOK=no \
+
+HOST_CONFIGURE_ARGS+= \
+	--disable-iconv \
+	--disable-libxml2 \
+	--disable-docs
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
@@ -66,3 +72,4 @@ define Package/fontconfig/install
 endef
 
 $(eval $(call BuildPackage,fontconfig))
+$(eval $(call HostBuild))
