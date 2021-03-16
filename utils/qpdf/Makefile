@@ -71,7 +71,8 @@ HOST_CONFIGURE_ARGS+= \
 	--disable-crypto-gnutls \
 	--disable-crypto-openssl
 
-HOST_LDFLAGS+= -L$(BUILD_DIR_HOST)/libjpeg-turbo-2.0.6/lib
+#HOST_LDFLAGS+= -L$(BUILD_DIR_HOST)/libjpeg-turbo-2.0.6/lib
+# Instead copy those files directly to staging_dir/hostpkg/lib
 
 define Build/Compile
 	$(call Build/Compile/Default, LIBTOOL="./libtool --tag=CXX")
