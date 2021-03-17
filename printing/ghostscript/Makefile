@@ -57,6 +57,9 @@ CONFIGURE_ARGS += \
 	--with-cups-datadir=/usr/share/cups
 
 HOST_CONFIGURE_ARGS += \
+	--disable-fontconfig \
+	--disable-dbus \
+	--without-tesseract \
 	--with-drivers=FILES \
 	--without-x \
 	--without-luratech \
