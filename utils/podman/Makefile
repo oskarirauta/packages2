@@ -43,7 +43,7 @@ define Package/podman
   CATEGORY:=Utilities
   TITLE:=Podman
   URL:=https://podman.io
-  DEPENDS:=$(GO_ARCH_DEPENDS) +conmon +cni +cni-plugins +btrfs-progs +glib2 +gnupg2 +iptables +libgpg-error +libseccomp +libgpgme +nsenter +zoneinfo-simple +runc +uxc +cgroupfs-mount +iptables-mod-extra +iptables-mod-conntrack-label +kmod-nf-nat +kmod-veth +kmod-tun +kmod-nf-conntrack-netlink +kmod-nf-ipvs +kmod-ikconfig +kmod-fs-btrfs +libselinux
+  DEPENDS:=$(GO_ARCH_DEPENDS) +conmon +cni +cni-plugins +btrfs-progs +glib2 +gnupg2 +iptables +libgpg-error +libseccomp +libgpgme +nsenter +zoneinfo-simple +crun +uxc +cgroupfs-mount +iptables-mod-extra +iptables-mod-conntrack-label +kmod-nf-nat +kmod-veth +kmod-tun +kmod-nf-conntrack-netlink +kmod-nf-ipvs +kmod-ikconfig +kmod-fs-btrfs +libselinux +libsysfs
 endef
 
 define Package/podman-docker
