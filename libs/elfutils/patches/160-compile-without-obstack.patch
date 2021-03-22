@@ -1,0 +1,11 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -587,7 +587,7 @@
+ 	AC_CHECK_LIB([obstack], [_obstack_begin], [have_obstack="true"], [have_obstack="false"])
+ 
+ 	if test "$have_obstack" = "false"; then
+-		AC_MSG_ERROR("no libobstack found")
++		AC_MSG_WARN("no libobstack found")
+ 	else
+ 		obstack_LDADD="-lobstack"
+ 	fi
