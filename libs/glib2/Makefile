@@ -69,10 +69,6 @@ COMP_ARGS= \
 MESON_HOST_ARGS += $(COMP_ARGS) -Dxattr=false -Diconv=external -Dselinux=disabled -Dinternal_pcre=true -Dnls=disabled -Doss_fuzz=disabled -Dsysprof=disabled -Dman=false -Dlibmount=disabled
 MESON_ARGS += $(COMP_ARGS) -Dxattr=true -Db_lto=true
 
-define Build/Install/Meson
-	$(call Ninja,-C $(MESON_BUILD_DIR) install --no-rebuild,DESTDIR="$(PKG_INSTALL_DIR)")
-endef
-
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(CP) \
