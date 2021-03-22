@@ -23,7 +23,7 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/glib-$(PKG_VERSION)
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/glib-$(PKG_VERSION)
 PKG_BUILD_DEPENDS:=meson/host gettext-full libiconv/host
 HOST_BUILD_DEPENDS:=meson/host gettext-full/host libiconv/host libffi/host host-util-linux/host
-PKG_CONFIG_DEPENDS:=CONFIG_BUILD_NLS
+PKG_CONFIG_DEPENDS:=CONFIG_BUILD_NLS libiconv/host
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/host-build.mk
@@ -45,10 +45,9 @@ endef
 
 HOST_LDFLAGS += -liconv -Wl,-rpath,$(STAGING_DIR_HOSTPKG)/lib
 TARGET_CFLAGS += -ffunction-sections -fdata-sections
-TARGET_LDFLAGS += -Wl,--gc-sections $(if $(INTL_FULL),-lintl)
+TARGET_LDFLAGS += -Wall -Wl,--gc-sections -lintl
 
 COMP_ARGS= \
-	--datadir=/usr/lib \
 	-Ddefault_library=both \
 	-Diconv=external \
 	-Dselinux=enabled \
@@ -65,10 +64,11 @@ COMP_ARGS= \
 	-Dnls=$(if $(CONFIG_BUILD_NLS),en,dis)abled \
 	-Doss_fuzz=disabled \
 	-Dglib_assert=true \
-	-Dglib_checks=false
+	-Dglib_checks=false \
+	-Dglib_debug=true
 
-MESON_HOST_ARGS += $(COMP_ARGS) --datadir=/usr/lib -Dxattr=false -Diconv=external -Dselinux=disabled -Dinternal_pcre=true -Dnls=disabled -Doss_fuzz=disabled -Dsysprof=disabled -Dman=false -Dlibmount=disabled
-MESON_ARGS += $(COMP_ARGS) -Dxattr=true -Db_lto=true
+MESON_HOST_ARGS += $(COMP_ARGS) -Dxattr=false -Diconv=external -Dselinux=disabled -Dinternal_pcre=true -Dnls=disabled -Doss_fuzz=disabled -Dsysprof=disabled -Dman=false -Dlibmount=disabled
+MESON_ARGS += $(COMP_ARGS) -Dxattr=true -Db_lto=true --datadir=/usr/lib
 
 CONFIGURE_ARGS += \
 	datadir="lib/glib-2.0" \
@@ -87,10 +87,9 @@ define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/glib-2.0 $(1)/usr/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.{so*,a} $(1)/usr/lib/
 
-ifneq ($(INTL_FULL),)
 	$(SED) '/^Libs:/s/-lintl \(.*\)/\1 -lintl/' \
 		$(PKG_INSTALL_DIR)/usr/lib/pkgconfig/glib-2.0.pc
-endif
+
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc $(1)/usr/lib/pkgconfig
 
 	$(INSTALL_DATA) \
