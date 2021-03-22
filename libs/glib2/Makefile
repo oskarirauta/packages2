@@ -48,6 +48,7 @@ TARGET_CFLAGS += -ffunction-sections -fdata-sections
 TARGET_LDFLAGS += -Wl,--gc-sections $(if $(INTL_FULL),-lintl)
 
 COMP_ARGS= \
+	--datadir=/usr/lib \
 	-Ddefault_library=both \
 	-Diconv=external \
 	-Dselinux=enabled \
@@ -66,61 +67,55 @@ COMP_ARGS= \
 	-Dglib_assert=true \
 	-Dglib_checks=false
 
-MESON_HOST_ARGS += $(COMP_ARGS) -Dxattr=false -Diconv=external -Dselinux=disabled -Dinternal_pcre=true -Dnls=disabled -Doss_fuzz=disabled -Dsysprof=disabled -Dman=false -Dlibmount=disabled
+MESON_HOST_ARGS += $(COMP_ARGS) --datadir=/usr/lib -Dxattr=false -Diconv=external -Dselinux=disabled -Dinternal_pcre=true -Dnls=disabled -Doss_fuzz=disabled -Dsysprof=disabled -Dman=false -Dlibmount=disabled
 MESON_ARGS += $(COMP_ARGS) -Dxattr=true -Db_lto=true
 
+CONFIGURE_ARGS += \
+	datadir="lib/glib-2.0" \
+	gio_module_dir="lib/glib-2.0"
+
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/bin/* \
-		$(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/{bin,include,lib} $(2)/share/aclocal $(1)/usr/share/glib-2.0
+	$(INSTALL_DIR) $(1)/usr/lib/glib-2.0 $(1)/usr/share/glib-2.0 $(1)/usr/lib/pkgconfig
 
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/include/glib-2.0 \
-		$(1)/usr/include/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/glib-2.0/include/*.h \
-		$(1)/usr/include/glib-2.0/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/include/gio-unix-2.0 \
-		$(1)/usr/include/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
 
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/glib-2.0 \
-		$(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/glib-2.0 $(1)/usr/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/glib-2.0/include/*.h $(1)/usr/include/glib-2.0/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/gio-unix-2.0 $(1)/usr/include/
 
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/*.{so*,a} \
-		$(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/glib-2.0 $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.{so*,a} $(1)/usr/lib/
 
-	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 ifneq ($(INTL_FULL),)
-	#$(SED) '/^Libs:/s/$$$$/ -lintl/' \
 	$(SED) '/^Libs:/s/-lintl \(.*\)/\1 -lintl/' \
 		$(PKG_INSTALL_DIR)/usr/lib/pkgconfig/glib-2.0.pc
 endif
-	$(INSTALL_DATA) \
-		$(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc \
-		$(1)/usr/lib/pkgconfig
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc $(1)/usr/lib/pkgconfig
 
-	$(INSTALL_DIR) $(2)/share/aclocal/
 	$(INSTALL_DATA) \
-		$(PKG_INSTALL_DIR)/usr/share/aclocal/*.m4  \
+		$(PKG_INSTALL_DIR)/usr/lib/aclocal/*.m4  \
 		$(2)/share/aclocal/
 
-	$(INSTALL_DIR) $(1)/usr/share/glib-2.0
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/share/glib-2.0/codegen \
-		$(1)/usr/share/glib-2.0/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/glib-2.0/codegen $(1)/usr/lib/glib-2.0/
+	$(LN) ../../lib/glib-2.0/codegen $(1)/usr/share/glib-2.0/codegen
+
 endef
 
 define Package/glib2/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/*.so* \
-		$(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib
+
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
+
+	$(INSTALL_DIR) $(1)/usr/lib/gettext/its $(1)/usr/lib/glib-2.0/schemas
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/gettext/its/gschema.* $(1)/usr/lib/gettext/its/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/glib-2.0/schemas/gschema.dtd $(1)/usr/lib/glib-2.0/schemas/
+endef
+
+define Package/glib2/postinst
+#!/bin/sh
+/usr/bin/glib-compile-schemas /usr/lib/glib-2.0/schemas
 endef
 
 $(eval $(call HostBuild))
