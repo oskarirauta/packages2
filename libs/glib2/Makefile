@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=glib2
 PKG_VERSION:=2.66.7
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=glib-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GNOME/glib/2.66
@@ -22,7 +22,7 @@ PKG_CPE_ID:=cpe:/a:gnome:glib
 PKG_BUILD_DIR:=$(BUILD_DIR)/glib-$(PKG_VERSION)
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/glib-$(PKG_VERSION)
 PKG_BUILD_DEPENDS:=meson/host gettext-full libiconv/host
-HOST_BUILD_DEPENDS:=meson/host gettext-full/host libiconv/host libffi/host
+HOST_BUILD_DEPENDS:=meson/host gettext-full/host libiconv/host libffi/host host-util-linux/host
 PKG_CONFIG_DEPENDS:=CONFIG_BUILD_NLS
 PKG_INSTALL:=1
 
@@ -34,7 +34,7 @@ include ../../../packages/devel/meson/meson.mk
 define Package/glib2
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=$(ICONV_DEPENDS) $(INTL_DEPENDS) +zlib +libpthread +libffi +libattr +libselinux +libmount
+  DEPENDS:=$(ICONV_DEPENDS) $(INTL_DEPENDS) +zlib +libpthread +libffi +libattr +libselinux +libmount +libelf +libasm +libdw
   TITLE:=glib 2.0
   URL:=http://www.gtk.org/
 endef
@@ -66,8 +66,12 @@ COMP_ARGS= \
 	-Dglib_assert=true \
 	-Dglib_checks=false
 
-MESON_HOST_ARGS += $(COMP_ARGS) -Dxattr=false
+MESON_HOST_ARGS += $(COMP_ARGS) -Dxattr=false -Diconv=external -Dselinux=disabled -Dinternal_pcre=true -Dnls=disabled -Doss_fuzz=disabled -Dsysprof=disabled -Dman=false -Dlibmount=disabled
 MESON_ARGS += $(COMP_ARGS) -Dxattr=true -Db_lto=true
+
+define Build/Install/Meson
+	$(call Ninja,-C $(MESON_BUILD_DIR) install --no-rebuild,DESTDIR="$(PKG_INSTALL_DIR)")
+endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
@@ -97,7 +101,8 @@ define Build/InstallDev
 
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 ifneq ($(INTL_FULL),)
-	$(SED) '/^Libs:/s/$$$$/ -lintl/' \
+	#$(SED) '/^Libs:/s/$$$$/ -lintl/' \
+	$(SED) '/^Libs:/s/-lintl \(.*\)/\1 -lintl/' \
 		$(PKG_INSTALL_DIR)/usr/lib/pkgconfig/glib-2.0.pc
 endif
 	$(INSTALL_DATA) \
