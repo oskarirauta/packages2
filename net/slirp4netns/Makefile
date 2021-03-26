@@ -20,6 +20,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/slirp4netns
   SECTION:=net

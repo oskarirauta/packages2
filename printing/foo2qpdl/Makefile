@@ -16,12 +16,13 @@ PKG_HASH:=skip
 
 include $(INCLUDE_DIR)/package.mk
 
-PKG_BUILD_DEPENDS:=ghostscript/host cups/host cups-filters/host
+PKG_BUILD_DEPENDS:=freetype/host ghostscript/host cups/host cups-filters/host
 PKG_INSTALL:=1
 
 define Package/foo2qpdl
   SECTION:=print
   CATEGORY:=Printing
+  SUBMENU:=Drivers
   TITLE:=foo2qpdl
   DEPENDS:=+libcups +ghostscript
   URL:=https://foo2zjs.rkkda.com/

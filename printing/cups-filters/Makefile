@@ -18,10 +18,11 @@ PKG_HASH:=e4150902809c58dfff7089c9345f196ecd88e38bce2be4800fa4811a0902057d
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=0
-HOST_BUILD_DEPENDS:=cups/host freetype/host ghostscript/host lcms2/host fontconfig/host libjpeg-turbo/host qpdf/host poppler/host
+HOST_BUILD_DEPENDS:=freetype/host libjpeg-turbo/host fontconfig/host cups/host ghostscript/host lcms2/host qpdf/host poppler/host glib2/host
 
 define Package/cups-filters
   SECTION:=print
@@ -39,7 +40,7 @@ define Package/libcups-filters
   SECTION:=print
   CATEGORY:=Printing
   SUBMENU:=Libraries
-  DEPENDS:=+libcups +libiconv-full +lcms2 +dejavu-fonts-ttf-DejaVuSans +libqpdf +poppler +fontconfig
+  DEPENDS:=$(ICONV_DEPENDS) +libcups +lcms2 +dejavu-fonts-ttf-DejaVuSans +libqpdf +poppler +fontconfig
   TITLE:=OpenPrinting CUPS Filters library
   URL:=http://www.cups.org/
 endef
@@ -89,6 +90,10 @@ CONFIGURE_ARGS += \
 		--with-test-font-path=/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf \
 		UNAME="Linux" \
 		LIBS="$(TARGET_LDFLAGS) -lz -lpng -ljpeg"
+
+HOST_CONFIGURE_VARS += \
+		LIBQPDF_CFLAGS="-I$(STAGING_DIR_HOST)/../hostpkg/include" \
+		LIBQPDF_LIBS="-L$(STAGING_DIR_HOST)/../hostpkg/lib -lqpdf"
 
 HOST_CONFIGURE_ARGS += \
 		--disable-options-checking \

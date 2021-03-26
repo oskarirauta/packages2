@@ -22,12 +22,13 @@ PKG_BUILD_DIR=$(BUILD_DIR)/lib$(PKG_NAME)-v$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include ../../../packages/devel/meson/meson.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/slirp
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=slirp
-  DEPENDS:= +glib2
+  DEPENDS:=$(INTL_DEPENDS) +glib2
   URL:=https://gitlab.freedesktop.org/slirp/libslirp
 endef
 

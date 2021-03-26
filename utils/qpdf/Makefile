@@ -20,6 +20,7 @@ PKG_INSTALL:=1
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
+PKG_BUILD_DEPENDS:=libjpeg-turbo/host
 HOST_BUILD_DEPENDS:=libjpeg-turbo/host
 
 define Package/qpdf

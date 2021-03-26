@@ -27,7 +27,7 @@ define Package/containerd
   CATEGORY:=Utilities
   TITLE:=containerd container runtime
   URL:=https://containerd.io/
-  DEPENDS:=$(GO_ARCH_DEPENDS) +btrfs-progs +runc
+  DEPENDS:=$(GO_ARCH_DEPENDS) +btrfs-progs +crun
   MENU:=1
 endef
 

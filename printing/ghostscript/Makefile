@@ -33,6 +33,8 @@ define Package/ghostscript/description
 endef
 
 TARGET_CFLAGS += $(FPIC)
+HOST_CFLAGS += -DJPEG_LIB_VERSION=90 -DBITS_IN_SAMPLE=8
+
 CONFIGURE_ARGS += \
 	--datarootdir=/usr/lib \
 	--datadir=/usr/lib \

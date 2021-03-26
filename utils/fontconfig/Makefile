@@ -21,6 +21,7 @@ PKG_FIXUP:=libtool
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_DEPENDS:=gperf/host
+HOST_BUILD_DEPENDS:=freetype/host
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk

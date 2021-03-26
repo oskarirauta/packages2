@@ -19,6 +19,7 @@ PKG_SOURCE_VERSION:=bd265b77a9f66f672bf1e3f0803145f2eccabf06
 PKG_MIRROR_HASH:=0a6d88912c2d5734b8a9be139dc50322b4a43592baaddbf71992d21103f4c62e
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
@@ -26,7 +27,7 @@ PKG_INSTALL:=1
 define Package/foomatic-db-engine
   SECTION:=print
   CATEGORY:=Printing
-  DEPENDS:=+libiconv-full +zlib +libxml2
+  DEPENDS:=$(ICONV_DEPENDS) +zlib +libxml2
   URL:=https://github.com/OpenPrinting/foomatic-db-engine-4
   TITLE:=foomatic-db-engine
 endef

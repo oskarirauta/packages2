@@ -1,0 +1,46 @@
+--- a/Makefile
++++ b/Makefile
+@@ -34,6 +34,7 @@
+ PKG_MANAGER ?= $(shell command -v dnf yum|head -n1)
+ # ~/.local/bin is not in PATH on all systems
+ PRE_COMMIT = $(shell command -v bin/venv/bin/pre-commit ~/.local/bin/pre-commit pre-commit | head -n1)
++CGO_ENABLED ?= 1
+ 
+ # This isn't what we actually build; it's a superset, used for target
+ # dependencies. Basically: all *.go files, except *_test.go, and except
+@@ -215,7 +216,7 @@
+ 
+ .PHONY: bin/podman-remote-static
+ podman-remote-static: bin/podman-remote-static
+-	CGO_ENABLED=0 $(GO) build $(BUILDFLAGS) -gcflags '$(GCFLAGS)' -asmflags '$(ASMFLAGS)' -ldflags '$(LDFLAGS_PODMAN_STATIC)' -tags "${REMOTETAGS}" -o bin/podman-remote-static ./cmd/podman
++	CGO_ENABLED=1 $(GO) build $(BUILDFLAGS) -gcflags '$(GCFLAGS)' -asmflags '$(ASMFLAGS)' -ldflags '$(LDFLAGS_PODMAN_STATIC)' -tags "${REMOTETAGS}" -o bin/podman-remote-static ./cmd/podman
+ 
+ .PHONY: podman-remote
+ podman-remote: bin/podman-remote
+@@ -229,7 +230,7 @@
+ 
+ podman-remote-%: .gopathok ## Build podman for a specific GOOS
+ 	$(eval BINSFX := $(shell test "$*" != "windows" || echo ".exe"))
+-	CGO_ENABLED=0 GOOS=$* $(GO) build $(BUILDFLAGS) -gcflags '$(GCFLAGS)' -asmflags '$(ASMFLAGS)' -ldflags '$(LDFLAGS_PODMAN)' -tags "${REMOTETAGS}" -o bin/$@$(BINSFX) ./cmd/podman
++	CGO_ENABLED=1 GOOS=$* $(GO) build $(BUILDFLAGS) -gcflags '$(GCFLAGS)' -asmflags '$(ASMFLAGS)' -ldflags '$(LDFLAGS_PODMAN)' -tags "${REMOTETAGS}" -o bin/$@$(BINSFX) ./cmd/podman
+ 
+ local-cross: $(CROSS_BUILD_TARGETS) ## Cross local compilation
+ 
+@@ -237,7 +238,7 @@
+ 	TARGET="$*"; \
+ 	GOOS="$${TARGET%%.*}" \
+ 	GOARCH="$${TARGET##*.}" \
+-	CGO_ENABLED=0 $(GO) build $(BUILDFLAGS) -gcflags '$(GCFLAGS)' -asmflags '$(ASMFLAGS)' -ldflags '$(LDFLAGS_PODMAN)' -tags '$(BUILDTAGS_CROSS)' -o "$@" ./cmd/podman
++	CGO_ENABLED=1 $(GO) build $(BUILDFLAGS) -gcflags '$(GCFLAGS)' -asmflags '$(ASMFLAGS)' -ldflags '$(LDFLAGS_PODMAN)' -tags '$(BUILDTAGS_CROSS)' -o "$@" ./cmd/podman
+ 
+ # Update nix/nixpkgs.json its latest stable commit
+ .PHONY: nixpkgs
+@@ -685,7 +686,7 @@
+ 
+ .PHONY: build-no-cgo
+ build-no-cgo:
+-	env BUILDTAGS="containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper exclude_disk_quota" CGO_ENABLED=0 $(MAKE)
++	env BUILDTAGS="containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper exclude_disk_quota" CGO_ENABLED=1 $(MAKE)
+ 
+ .PHONY: vendor
+ vendor:

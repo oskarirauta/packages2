@@ -126,8 +126,11 @@ define Build/Compile
 		DSTROOT="$(PKG_INSTALL_DIR)" \
 		STRIP="/bin/true" \
 		all install
-	rm -rf $(PKG_BUILD_DIR)/ipkg-install/etc/cups/ppd $(PKG_BUILD_DIR)/ipkg-install/etc/cups/ssl
-	cp $(PKG_INSTALL_DIR)/usr/lib64/** $(PKG_INSTALL_DIR)/usr/lib/
+	$(RM) -rf $(PKG_BUILD_DIR)/ipkg-install/etc/cups/ppd $(PKG_BUILD_DIR)/ipkg-install/etc/cups/ssl
+	$(INSTALL_DIR) $(PKG_INSTALL_DIR)/usr/lib64
+	touch $(PKG_INSTALL_DIR)/usr/lib64/dummy
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib64/** $(PKG_INSTALL_DIR)/usr/lib/
+	$(RM) $(PKG_INSTALL_DIR)/usr/lib/dummy
 endef
 
 define Package/cups/install
