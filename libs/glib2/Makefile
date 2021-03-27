@@ -112,10 +112,10 @@ define Package/glib2/install
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/glib-2.0/schemas/gschema.dtd $(1)/usr/lib/glib-2.0/schemas/
 endef
 
-define Package/glib2/postinst
-#!/bin/sh
-/usr/bin/glib-compile-schemas /usr/lib/glib-2.0/schemas
-endef
+#define Package/glib2/postinst
+##!/bin/sh
+#/usr/bin/glib-compile-schemas /usr/lib/glib-2.0/schemas
+#endef
 
 $(eval $(call HostBuild))
 $(eval $(call BuildPackage,glib2))
