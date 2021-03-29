@@ -42,6 +42,7 @@ define Package/host-util-linux
   TITLE:=host-util-linux-support
   URL:=http://www.kernel.org/pub/linux/utils/util-linux/
   ABI_VERSION:=1
+  BUILDONLY:=1
 endef
 
 define Package/host-util-linux/description
