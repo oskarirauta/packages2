@@ -4,8 +4,8 @@ PKG_NAME:=syslinux
 PKG_VERSION:=6.04
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-x86_64-precompiled.tar.xz
-PKG_SOURCE_URL:=https://github.com/oskarirauta/owrt-packages2/raw/boot/syslinux/files
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-x86_64-precompiled.tar.gz
+PKG_SOURCE_URL:=https://github.com/oskarirauta/owrt-packages2/raw/main/boot/syslinux/files
 PKG_HASH:=43d966c80cd1b25f2ce59e594a8f71dabe67d51dad0149cc8831206871446014
 
 PKG_BUILD_PARALLEL:=1
