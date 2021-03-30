@@ -20,12 +20,15 @@ define Package/syslinux
   SECTION:=boot
   CATEGORY:=Boot Loaders
   TITLE:=syslinux
-  DEPENDS:=@TARGET_x86_64
+  DEPENDS:=@TARGET_x86_64 +libuuid
 endef
 
 define Package/syslinux/description
   Boot loader for the Linux operating system
 endef
+
+STRIP:=echo "Not stripping syslinux."
+RSTRIP:=echo "Not stripping syslinux."
 
 define Build/Configure
 	# Nothing to configure
