@@ -1,3 +1,4 @@
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cmake
@@ -9,8 +10,8 @@ PKG_SOURCE_URL:=https://github.com/oskarirauta/owrt-packages2/raw/main/devel/cma
 PKG_HASH:=c596094a439cc28e595e89276fd6d77e268d815cb921abf99ab1bbdeb7a54663
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
-PKG_LICENSE:=GPL-2.0-or-later
-PKG_LICENSE_FILES:=COPYING
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:= Copyright.txt LGPLv2.1.txt LGPLv3.txt
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -19,7 +20,7 @@ define Package/cmake
   SECTION:=devel
   CATEGORY:=Development
   TITLE:=cmake
-  DEPENDS:=@TARGET_x86_64
+  DEPENDS:=@TARGET_x86_64 +libstdcpp
 endef
 
 define Package/cmake/description
