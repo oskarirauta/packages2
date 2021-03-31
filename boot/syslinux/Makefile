@@ -15,16 +15,29 @@ PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/syslinux
-  $(call Package/syslinux/Default)
+define Package/syslinux/Default
   SECTION:=boot
   CATEGORY:=Boot Loaders
+endef
+
+define Package/syslinux
+  $(call Package/syslinux/Default)
   TITLE:=syslinux
   DEPENDS:=@TARGET_x86_64 +libuuid
 endef
 
 define Package/syslinux/description
   Boot loader for the Linux operating system
+endef
+
+define Package/syslinux-scripts
+  $(call Package/syslinux/Default)
+  TITLE:=syslinux-scripts
+  DEPENDS:=syslinux +perl
+endef
+
+define Package/syslinux-scripts/description
+  Perl scripts provided by syslinux
 endef
 
 STRIP:=echo "Not stripping syslinux."
@@ -45,7 +58,7 @@ endef
 define Package/syslinux/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib/syslinux
 	$(INSTALL_DIR) $(1)/usr/lib/syslinux/{bios,config,diag,efi32,efi64}
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/** $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{extlinux,gethostip,isohybrid,memdiskfind,syslinux} $(1)/usr/bin/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/bios/** $(1)/usr/lib/syslinux/bios/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/config/openwrt.png $(1)/usr/lib/syslinux/config/
 	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/usr/lib/syslinux/config/*.cfg $(1)/usr/lib/syslinux/config/
@@ -58,4 +71,10 @@ define Package/syslinux/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi64/syslinux.efi $(1)/usr/lib/syslinux/efi64/
 endef
 
+define Package/syslinux-scripts/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{pxelinux-options,sha1pass,lss16toppm,mkdiskimage,syslinux2ansi,ppmtolss16,keytab-lilo,isohybrid.pl,md5pass} $(1)/usr/bin
+endef
+
 $(eval $(call BuildPackage,syslinux))
+$(eval $(call BuildPackage,syslinux-scripts))
