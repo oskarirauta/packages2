@@ -69,6 +69,8 @@ define Package/syslinux/install
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi64/*.c32 $(1)/usr/lib/syslinux/efi64/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi64/ldlinux.e64 $(1)/usr/lib/syslinux/efi64/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi64/syslinux.efi $(1)/usr/lib/syslinux/efi64/
+	$(INSTALL_DATA) ./files/openwrt_800x600.png $(1)/usr/lib/syslinux/config/
+	$(INSTALL_DATA) ./files/openwrt_1024x768.png $(1)/usr/lib/syslinux/config/
 endef
 
 define Package/syslinux-scripts/install

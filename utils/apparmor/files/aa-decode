@@ -1,0 +1,114 @@
+#!/bin/sh
+#
+#    Copyright (C) 2009-2010, 2012 Canonical Ltd.
+#    Copyright (C) 2012 Christian Boltz
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, contact Canonical, Ltd.
+#
+
+#set -e
+
+help() {
+	cat <<EOM
+USAGE: aa-decode [OPTIONS] <encoded string>
+Decode a hex-encoded string to ASCII. It will also take an audit log on
+standard input and convert any hex-encoded AppArmor log entries and display
+them on standard output.
+
+OPTIONS:
+  --help	display this help
+
+EXAMPLES:
+$ aa-decode 2F746D702F666F6F20626172
+Decoded: /tmp/foo bar
+$ cat /var/log/kern.log | aa-decode
+... denied_mask="r::" fsuid=1000 ouid=1000 name=/tmp/foo bar
+EOM
+}
+
+match_re() {
+	local result=$(echo "$1" | grep -E "$2" )
+	[ -z "$result" ] && return 1 || return 0
+}
+
+
+decode() {
+	$(echo "$1" | egrep -q "^[0-9A-Fa-f]+$"); [ "$?" -eq 0 ] &&
+		python3 -c "import binascii; print(bytes.decode(binascii.unhexlify('$1'), errors='strict'));" || echo ""
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+	help
+	exit
+fi
+
+# if have an argument, then use it, otherwise process stdin
+[ -n "$1" ] && {
+
+	e="$1"
+
+	$(echo "$e" | egrep -q "^[0-9A-Fa-f]+$"); [ "$?" -ne 0 ] && {
+		echo "String should only contain hex characters (0-9, a-f, A-F)"
+		exit 1
+	}
+
+	d=$(decode $e)
+
+	[ -z "$d" ] && {
+		echo "Could not decode string"
+		exit 1
+	}
+
+	echo "Decoded: $d"
+	exit 0
+}
+
+[ -t 0 ] && {
+	help
+	exit
+}
+
+while read line ; do
+
+	# check if line contains encoded name= or profile=
+
+	matches=0
+	match_re "$line" "^[[:blank:]](name|profile|proctitle)=[0-9a-fA-F]+"; [ "$?" -eq 0 ] && matches=1 || {
+		 match_re "$line" "^(name|profile|proctitle)=[0-9a-fA-F]+"; [ "$?" -eq 0 ] && matches=1
+	}
+
+	[ "$matches" -eq 0 ] || {
+
+		# cut the encoded filename/profile name out of the line and decode it
+		ne=$(echo "$line" | sed 's/.* name=\([^ ]*\).*$/\\1/g')
+		[ "$line" = "$ne" ] && ne=$(echo "$line" | sed 's/.*name=\([^ ]*\).*$/\\1/g')
+		echo var: $ne
+		nd="$(decode ${ne/\'/\\\'})"
+
+		pe=$(echo "$line" | sed 's/.* profile=\([^ ]*\).*$/\\1/g')
+		[ "$line" = "$pe" ] && pe=$(echo "$line" | sed 's/.*profile=\([^ ]*\).*$/\\1/g')
+		pd="$(decode ${pe/\'/\\\'})"
+
+		pce=$(echo "$line" | sed 's/.* proctitle=\([^ ]*\).*$/\\1/g')
+		[ "$line" = "$pce" ] && pce=$(echo "$line" | sed 's/.*proctitle=\([^ ]*\).*$/\\1/g')
+		pcd="$(decode ${pce/\'/\\\'})"
+
+		# replace encoded name and profile with its decoded counterparts (only if it was encoded)
+		test -n "$nd" && line="${line/name=$ne/name=\"$nd\"}"
+		test -n "$pd" && line="${line/profile=$pe/profile=\"$pd\"}"
+		test -n "$pcd" && line="${line/proctitle=$pce/proctitle=\"$pcd\"}"
+	}
+
+	echo "$line"
+
+done

@@ -1,0 +1,233 @@
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=apparmor
+PKG_VERSION:=3.0.0
+PKG_RELEASE:=$(AUTORELEASE)
+
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://gitlab.com/apparmor/apparmor.git
+PKG_SOURCE_VERSION:=eb1328f18a98d2b3cc6f9fb617294b6eeb18f365
+PKG_MIRROR_HASH:=skip
+#5def4f3c372806b48f840a449531dde886bbea65fa919c29f0a7c457cc6dab5b
+
+PKG_LICENSE:=GPL-1.0-only
+PKG_LICENSE_FILES:=LICENSE
+PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
+PKG_BUILD_DEPENDS:=python3
+BUILDONLY:=1
+
+include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
+include ../../../packages/lang/python/python3-version.mk
+
+define Package/apparmor/Default
+  SECTION:=utils
+  CATEGORY:=Utilities
+  SUBMENU:=AppArmor
+  URL:=https://apparmor.net
+endef
+
+define Package/libapparmor
+  TITLE:=AppArmor library
+  SECTION:=libs
+  CATEGORY:=Libraries
+  URL:=https://apparmor.net
+  DEPENDS:=
+endef
+
+define Package/python3-apparmor
+  TITLE:=AppArmor python bindings
+  SECTION:=lang
+  CATEGORY:=Languages
+  SUBMENU:=Python
+  URL:=https://apparmor.net
+  DEPENDS:=+libapparmor +python3
+endef
+
+define Package/apparmor-utils
+  $(call Package/apparmor/Default)
+  TITLE:=AppArmor utils
+  DEPENDS:=$(INTL_DEPENDS) +libapparmor +python3-apparmor +python3 +python3-readline +python3-psutil +ss +findutils-xargs
+endef
+
+define Package/apparmor-pam
+  TITLE:=AppArmor PAM Plugin
+  SECTION:=libs
+  CATEGORY:=Libraries
+  URL:=https://apparmor.net
+  DEPENDS:=+libapparmor +libpam
+endef
+
+define Package/apparmor-profiles
+  $(call Package/apparmor/Default)
+  TITLE:=AppArmor default profiles
+  DEPENDS:=
+endef
+
+define Package/apparmor-utils/description
+  AppArmor userspace utilities
+endef
+
+define Package/apparmor-pam/description
+  AppArmor PAM plugin
+endef
+
+define Package/apparmor-profiles/description
+  AppArmor Extra Profiles
+endef
+
+PYTHON3_DIR:=$(STAGING_DIR)/usr
+PYTHON3_INC_DIR:=$(PYTHON3_DIR)/include/python$(PYTHON3_VERSION)
+PYTHON3_LIB_DIR:=$(PYTHON3_DIR)/lib/python$(PYTHON3_VERSION)
+PYTHON3_PKG_DIR:=/usr/lib/python$(PYTHON3_VERSION)/site-packages
+PYTHON3:=python$(PYTHON3_VERSION)
+HOST_PYTHON:=$(STAGING_DIR_HOST)/bin/python$(PYTHON3_VERSION_MAJOR)
+
+CONFIGURE_PATH=libraries/libapparmor
+
+CONFIGURE_VARS += \
+		SHELL=$(bash) \
+		PYTHON_VERSION=$(PYTHON3_VERSION) \
+		PYTHON_VERSIONS=$(PYTHON3) \
+		PYTHON=$(PYTHON3) \
+		PYTHON_CPPFLAGS="-I$(STAGING_DIR)/usr/include/python$(PYTHON3_VERSION)" \
+		PYTHON_LDFLAGS="-I$(PYTHON3_INC_DIR) -L$(STAGING_DIR)/usr/lib -L$(PYTHON3_LIB_DIR)" \
+		PYTHON_EXTRA_LDFLAGS="-L$(STAGING_DIR)/usr/lib -L$(PYTHON3_LIB_DIR)/config-$(PYTHON3_VERSION) -lpthread -ldl -lm -lz -lpython$(PYTHON3_VERSION)" \
+		ac_cv_path_PYTHON_CONFIG=$(STAGING_DIR)/root-x86/usr/bin/python$(PYTHON3_VERSION)-config 
+
+CONFIGURE_ARGS += \
+                --with-python \
+                --without-perl \
+		--without-ruby \
+                --disable-man-pages
+
+MAKE_VARS += WITH_LIBINTL=1
+MAKE_FLAGS += WITH_LIBINTL=1
+
+APPARMOR_CFLAGS = -I$(PKG_BUILD_DIR)/libraries/libapparmor/include
+APPARMOR_LDFLAGS = -L$(PKG_BUILD_DIR)/libraries/libapparmor/src/.libs
+
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	$(CP) ./files/configure.make $(PKG_BUILD_DIR)/libraries/libapparmor/Makefile
+	$(MAKE) -C $(PKG_BUILD_DIR)/libraries/libapparmor configure
+	$(RM) $(PKG_BUILD_DIR)/libraries/libapparmor/Makefile
+	$(SED) 's#ac_cv_path_PYTHON_CONFIG=#ac_cv_path_X_PYTHON_CONFIG=#g' $(PKG_BUILD_DIR)/libraries/libapparmor/configure
+endef
+
+define Build/Compile
+	# Building libapparmor
+	+$(MAKE_VARS) \
+		CFLAGS="$(TARGET_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/libraries/libapparmor \
+		$(MAKE_FLAGS)
+	# Building parser
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS) -lgcc_s" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/parser \
+		$(MAKE_FLAGS) apparmor_parser
+	# Building binutils
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/binutils \
+		$(MAKE_FLAGS)
+	# Building utils
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/utils \
+		$(MAKE_FLAGS)
+	# Building profiles
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS")" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/profiles \
+		$(MAKE_FLAGS)
+	# Building PAM helper
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/changehat/pam_apparmor \
+		$(MAKE_FLAGS)
+endef
+
+define Build/Install
+	$(INSTALL_DIR) $(PKG_INSTALL_DIR)-libapparmor $(PKG_INSTALL_DIR)-utils $(PKG_INSTALL_DIR)-profiles $(PKG_INSTALL_DIR)-pam
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \
+		CFLAGS="$(TARGET_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" \
+		$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/libraries/libapparmor \
+		$(MAKE_FLAGS) DESTDIR="$(PKG_INSTALL_DIR)-libapparmor" install
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \
+		CFLAGS="$(TARGET_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" USE_SYSTEM=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/parser \
+		$(MAKE_FLAGS) DESTDIR="$(PKG_INSTALL_DIR)-utils" install
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \
+		CFLAGS="$(TARGET_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" USE_SYSTEM=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/binutils \
+		$(MAKE_FLAGS) DESTDIR="$(PKG_INSTALL_DIR)-utils" install
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \
+		CFLAGS="$(TARGET_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" USE_SYSTEM=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/utils \
+		$(MAKE_FLAGS) DESTDIR="$(PKG_INSTALL_DIR)-utils" install
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \
+		CFLAGS="$(TARGET_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" USE_SYSTEM=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/profiles \
+		$(MAKE_FLAGS) DESTDIR="$(PKG_INSTALL_DIR)-profiles" install
+	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \
+		CFLAGS="$(TARGET_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" USE_SYSTEM=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/changehat/pam_apparmor \
+		$(MAKE_FLAGS) DESTDIR="$(PKG_INSTALL_DIR)-pam" install
+endef
+
+define Package/libapparmor/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-libapparmor/usr/lib/libapparmor.so.1 $(1)/usr/lib/
+	$(LN) libapparmor.so.1 $(1)/usr/lib/libapparmor.so
+endef
+
+define Package/python3-apparmor/install
+	$(INSTALL_DIR) \
+		$(1)/usr/lib/python$(PYTHON3_VERSION)/site-packages \
+		$(1)/usr/lib/python$(PYTHON3_VERSION)/site-packages/LibAppArmor
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-libapparmor/usr/lib/python$(PYTHON3_VERSION)/site-packages/*.egg-info \
+		$(1)/usr/lib/python$(PYTHON3_VERSION)/site-packages/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-libapparmor/usr/lib/python$(PYTHON3_VERSION)/site-packages/LibAppArmor/*.py \
+		$(1)/usr/lib/python$(PYTHON3_VERSION)/site-packages/LibAppArmor
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-libapparmor/usr/lib/python$(PYTHON3_VERSION)/site-packages/LibAppArmor/*.so \
+		$(1)/usr/lib/python$(PYTHON3_VERSION)/site-packages/LibAppArmor/
+	$(LN) -s _LibAppArmor.cpython-$(PYTHON3_VERSION_MAJOR)$(PYTHON3_VERSION_MINOR).so \
+		$(1)/usr/lib/python$(PYTHON3_VERSION)/site-packages/LibAppArmor/_LibAppArmor.so
+endef
+
+define Package/apparmor-utils/install
+	$(INSTALL_DIR) $(1)/etc/apparmor $(1)/usr/sbin $(1)/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-utils/sbin/apparmor_parser $(1)/sbin/
+	$(INSTALL_CONF) $(PKG_INSTALL_DIR)-utils/etc/apparmor/*.conf $(1)/etc/apparmor/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-utils/etc/apparmor/severity.db $(1)/etc/apparmor/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-utils/sbin/apparmor_parser $(1)/sbin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-utils/usr/bin/{aa-exec,aa-easyprof,aa-enabled,aa-features-abi} $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-utils/usr/sbin/{aa-audit,aa-autodep,aa-cleanprof,aa-complain,aa-disable,aa-enforce,aa-genprof,aa-logprof,aa-mergeprof,aa-notify,aa-remove-unknown,aa-status,aa-unconfined} $(1)/usr/sbin/
+	$(LN) aa-status $(1)/usr/sbin/apparmor_status
+	$(INSTALL_DIR) $(1)/usr/share/apparmor/easyprof/templates $(1)/usr/share/apparmor/easyprof/policygroups
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-utils/usr/share/apparmor/easyprof/templates/* $(1)/usr/share/apparmor/easyprof/templates/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-utils/usr/share/apparmor/easyprof/policygroups/* $(1)/usr/share/apparmor/easyprof/policygroups/
+	$(INSTALL_DIR) $(1)/usr/lib/python3.9/site-packages $(1)/usr/lib/python3.9/site-packages/apparmor $(1)/usr/lib/python3.9/site-packages/apparmor/rule
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-utils/usr/lib/python3.9/site-packages/*.egg-info \
+		$(1)/usr/lib/python3.9/site-packages/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-utils/usr/lib/python3.9/site-packages/apparmor/*.py \
+		$(1)/usr/lib/python3.9/site-packages/apparmor/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)-utils/usr/lib/python3.9/site-packages/apparmor/rule/*.py \
+		$(1)/usr/lib/python3.9/site-packages/apparmor/rule
+	$(INSTALL_DIR) $(1)/etc/init.d $(1)/lib/functions
+	$(INSTALL_BIN) ./files/apparmor.sh $(1)/lib/functions/
+	$(INSTALL_BIN) ./files/apparmor.init $(1)/etc/init.d/apparmor
+	$(INSTALL_BIN) ./files/aa-decode $(1)/usr/sbin/
+endef
+
+define Package/apparmor-pam/install
+	$(INSTALL_DIR) $(1)/usr/lib/security
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)-pam/lib/security/*.so $(1)/usr/lib/security/
+endef
+
+define Package/apparmor-profiles/install
+	$(INSTALL_DIR) $(1)/etc/apparmor.d $(1)/usr/share/apparmor/extra-profiles
+	$(CP) -aR $(PKG_INSTALL_DIR)-profiles/etc/apparmor.d/** $(1)/etc/apparmor.d/
+	$(INSTALL_CONF) $(PKG_INSTALL_DIR)-profiles/usr/share/apparmor/extra-profiles/** $(1)/usr/share/apparmor/extra-profiles/
+endef
+
+$(eval $(call BuildPackage,libapparmor))
+$(eval $(call BuildPackage,python3-apparmor))
+$(eval $(call BuildPackage,apparmor-utils))
+$(eval $(call BuildPackage,apparmor-pam))
+$(eval $(call BuildPackage,apparmor-profiles))
