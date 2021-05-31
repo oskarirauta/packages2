@@ -12,6 +12,8 @@ PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
+PKG_LICENSE:=GPL-3.0-only
+PKG_LICENSE_FILES:=COPYING
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -19,7 +21,8 @@ define Package/mtools
   SECTION:=utils
   CATEGORY:=Utilities
   SUBMENU:=Disc
-  TITLE:=mtools
+  TITLE:=Collection of utilities to access MS-DOS disks
+  URL:=https://www.gnu.org/software/mtools
   DEPENDS:=+libbsd
 endef
 

@@ -6,13 +6,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=apparmor
-PKG_VERSION:=3.0.1
+PKG_VERSION:=3.0.0
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.com/apparmor/apparmor.git
-PKG_SOURCE_VERSION:=0325ba06da6eeb5acf3e568063a08136fd0913e0
-PKG_MIRROR_HASH:=303ceca041ad8023fa44cdda366448d60b6299790266834b4078d30b70ad27f9
+PKG_SOURCE_VERSION:=eb1328f18a98d2b3cc6f9fb617294b6eeb18f365
+PKG_MIRROR_HASH:=skip
+#5def4f3c372806b48f840a449531dde886bbea65fa919c29f0a7c457cc6dab5b
 
 PKG_LICENSE:=GPL-1.0-only
 PKG_LICENSE_FILES:=LICENSE
@@ -20,15 +21,9 @@ PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_BUILD_DEPENDS:=python3
 BUILDONLY:=1
 
-HOST_PYTHON3_PACKAGE_BUILD_DEPENDS:=setuptools-scm
-
-#include $(INCLUDE_DIR)/package.mk
-#include $(INCLUDE_DIR)/nls.mk
-#include ../../lang/python/python3-package.mk
-
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-include ../../../packages/lang/python/python3-package.mk
+include ../../../packages/lang/python/python3-version.mk
 
 define Package/apparmor/Default
   SECTION:=utils
@@ -74,6 +69,13 @@ define Package/apparmor-profiles/description
   AppArmor Extra Profiles
 endef
 
+PYTHON3_DIR:=$(STAGING_DIR)/usr
+PYTHON3_INC_DIR:=$(PYTHON3_DIR)/include/python$(PYTHON3_VERSION)
+PYTHON3_LIB_DIR:=$(PYTHON3_DIR)/lib/python$(PYTHON3_VERSION)
+PYTHON3_PKG_DIR:=/usr/lib/python$(PYTHON3_VERSION)/site-packages
+PYTHON3:=python$(PYTHON3_VERSION)
+HOST_PYTHON:=$(STAGING_DIR_HOST)/bin/python$(PYTHON3_VERSION_MAJOR)
+
 CONFIGURE_PATH=libraries/libapparmor
 
 CONFIGURE_VARS += \
@@ -84,7 +86,7 @@ CONFIGURE_VARS += \
 		PYTHON_CPPFLAGS="-I$(STAGING_DIR)/usr/include/python$(PYTHON3_VERSION)" \
 		PYTHON_LDFLAGS="-I$(PYTHON3_INC_DIR) -L$(STAGING_DIR)/usr/lib -L$(PYTHON3_LIB_DIR)" \
 		PYTHON_EXTRA_LDFLAGS="-L$(STAGING_DIR)/usr/lib -L$(PYTHON3_LIB_DIR)/config-$(PYTHON3_VERSION) -lpthread -ldl -lm -lz -lpython$(PYTHON3_VERSION)" \
-		ac_cv_path_PYTHON_CONFIG=$(STAGING_DIR_ROOT)/usr/bin/python$(PYTHON3_VERSION)-config 
+		ac_cv_path_PYTHON_CONFIG=$(STAGING_DIR)/root-x86/usr/bin/python$(PYTHON3_VERSION)-config 
 
 CONFIGURE_ARGS += \
                 --with-python \
@@ -92,13 +94,20 @@ CONFIGURE_ARGS += \
 		--without-ruby \
                 --disable-man-pages
 
-ifeq ($(CONFIG_BUILD_NLS),y)
-	MAKE_VARS += WITH_LIBINTL=1
-	MAKE_FLAGS += WITH_LIBINTL=1
-endif
+MAKE_VARS += WITH_LIBINTL=1
+MAKE_FLAGS += WITH_LIBINTL=1
 
 APPARMOR_CFLAGS = -I$(PKG_BUILD_DIR)/libraries/libapparmor/include
 APPARMOR_LDFLAGS = -L$(PKG_BUILD_DIR)/libraries/libapparmor/src/.libs
+
+#define Build/Prepare
+#	$(call Build/Prepare/Default)
+#	#$(CP) ./files/configure.make $(PKG_BUILD_DIR)/libraries/libapparmor/Makefile
+#	$(MAKE) -C $(PKG_BUILD_DIR)/libraries/libapparmor configure
+#	$(RM) $(PKG_BUILD_DIR)/libraries/libapparmor/Makefile
+#	$(SED) 's#ac_cv_path_PYTHON_CONFIG=#ac_cv_path_X_PYTHON_CONFIG=#g' 
+#$(PKG_BUILD_DIR)/libraries/libapparmor/configure
+#endef
 
 define Build/Configure
 	$(MAKE) -C $(PKG_BUILD_DIR)/libraries/libapparmor configure
@@ -114,27 +123,23 @@ define Build/Compile
 		$(MAKE_FLAGS)
 	# Building parser
 	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
-		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS) -lgcc_s" USE_SYSTEM=0 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/parser \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS) -lgcc_s" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/parser \
 		$(MAKE_FLAGS) apparmor_parser
 	# Building binutils
 	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
-		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/binutils \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/binutils \
 		$(MAKE_FLAGS)
 	# Building utils
 	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
-		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/utils \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/utils \
 		$(MAKE_FLAGS)
 	# Building profiles
 	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) \
-		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS")" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/profiles \
+		CFLAGS="$(TARGET_CFLAGS) $(APPARMOR_CFLAGS)" CPPFLAGS="$(TARGET_CPPFLAGS) $(APPARMOR_CFLAGS")" LDFLAGS="$(TARGET_LDFLAGS) $(APPARMOR_LDFLAGS)" USE_SYSTEM=0 WITH_LIBINTL=1 $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/profiles \
 		$(MAKE_FLAGS)
 endef
 
 define Build/Install
-	# Make sure we have python's setup tools installed
-	$(if $(PYTHON3_PKG_HOST_PIP_INSTALL_ARGS), \
-		$(call HostPython3/PipInstall,$(PYTHON3_PKG_HOST_PIP_INSTALL_ARGS)) \
-	)
 	$(INSTALL_DIR) $(PKG_INSTALL_DIR)-libapparmor $(PKG_INSTALL_DIR)-utils $(PKG_INSTALL_DIR)-profiles
 	# Installing libapparmor
 	+$(MAKE_VARS) PYTHON=$(HOST_PYTHON) VERSION=$(PYTHON3_VERSION) \

@@ -13,12 +13,12 @@ PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/rzr/gummiboot.git
 PKG_SOURCE_DATE:=2021-04-11
 PKG_SOURCE_VERSION:=eb3daf2ca4cb1657cf1f780957485d690a552bf6
-PKG_MIRROR_HASH:=skip
+PKG_MIRROR_HASH:=4c57791693b57bbe36e85b49d70310728b8008c4c545006a71c5a5f71b8df501
 
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE
-PKG_BUILD_PARALLEL:=1
 PKG_BUILD_DEPENDS:=gnu-efi
+PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
@@ -28,7 +28,7 @@ define Package/gummiboot
   SECTION:=boot
   CATEGORY:=Boot Loaders
   TITLE:=Simple UEFI boot manager
-  DEPENDS:=+libblkid
+  DEPENDS:=@TARGET_x86_64 +libblkid
   URL:=https://github.com/rzr/gummiboot
 endef
 
@@ -40,8 +40,6 @@ CONFIGURE_ARGS += \
 	--with-efi-libdir=$(STAGING_DIR)/usr/lib \
 	--with-efi-ldsdir=$(STAGING_DIR)/usr/lib \
 	--with-efi-includedir=$(STAGING_DIR)/usr/include
-
-# -I$(TOOLCHAIN_DIR)/include -I$(STAGING_DIR)/usr/include
 
 define Build/Compile
 	+$(MAKE_VARS) EFI_CFLAGS="-I$(TOOLCHAIN_DIR)/include $(TARGET_CFLAGS)" \
@@ -63,4 +61,3 @@ define Package/gummiboot/install
 endef
 
 $(eval $(call BuildPackage,gummiboot))
-

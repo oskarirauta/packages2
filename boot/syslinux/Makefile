@@ -61,7 +61,7 @@ define Package/syslinux/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{extlinux,gethostip,isohybrid,memdiskfind,syslinux} $(1)/usr/bin/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/bios/** $(1)/usr/lib/syslinux/bios/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/config/openwrt.png $(1)/usr/lib/syslinux/config/
-	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/usr/lib/syslinux/config/*.cfg $(1)/usr/lib/syslinux/config/
+	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/usr/lib/syslinux/config/e*.cfg $(1)/usr/lib/syslinux/config/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/diag/** $(1)/usr/lib/syslinux/diag/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi32/*.c32 $(1)/usr/lib/syslinux/efi32/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi32/ldlinux.e32 $(1)/usr/lib/syslinux/efi32/
@@ -71,6 +71,8 @@ define Package/syslinux/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/syslinux/efi64/syslinux.efi $(1)/usr/lib/syslinux/efi64/
 	$(INSTALL_DATA) ./files/openwrt_800x600.png $(1)/usr/lib/syslinux/config/
 	$(INSTALL_DATA) ./files/openwrt_1024x768.png $(1)/usr/lib/syslinux/config/
+	$(INSTALL_DATA) ./files/ui.cfg $(1)/usr/lib/syslinux/config/ui.cfg
+	$(INSTALL_DATA) ./files/ui_efi.cfg $(1)/usr/lib/syslinux/config/ui_efi.cfg
 endef
 
 define Package/syslinux-scripts/install

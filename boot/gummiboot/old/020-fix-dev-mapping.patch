@@ -1,6 +1,6 @@
 --- a/src/setup/setup.c
 +++ b/src/setup/setup.c
-@@ -83,6 +83,9 @@ static int verify_esp(const char *p, uin
+@@ -83,6 +83,9 @@
          blkid_probe b = NULL;
          int r;
          const char *v;
@@ -10,7 +10,7 @@
  
          if (statfs(p, &sfs) < 0) {
                  fprintf(stderr, "Failed to check file system type of %s: %m\n", p);
-@@ -122,24 +125,38 @@ static int verify_esp(const char *p, uin
+@@ -122,24 +125,38 @@
                  return -ENODEV;
          }
  

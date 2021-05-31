@@ -13,8 +13,11 @@ PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/vathpela/gnu-efi.git
 PKG_SOURCE_DATE:=2021-04-11
 PKG_SOURCE_VERSION:=3e4d5c79905afcd815b0beb3dcfe2dfae5b3e6dd
-PKG_MIRROR_HASH:=skip
+PKG_MIRROR_HASH:=7660d2259c1d5208bcabee5a0ffb6dc61f41363a79ba9158f3dd413a8af8e238
 PKG_BUILD_PARALLEL:=1
+
+PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
+PKG_LICENSE_FILES:=README.efilib
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -23,7 +26,8 @@ define Package/gnu-efi
   CATEGORY:=Libraries
   TITLE:=GNU's EFI library
   URL:=https://github.com/vathpela/gnu-efi
-  DEPENDS:=
+  HIDDEN:=1
+  DEPENDS:=@TARGET_x86_64
 endef
 
 define Package/gnu-efi/description
