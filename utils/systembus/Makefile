@@ -8,49 +8,35 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=systembus
-PKG_VERSION:=0.89
+PKG_VERSION:=0.95
 PKG_RELEASE:=1
 
-include $(INCLUDE_DIR)/package.mk
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/oskarirauta/systembus.git
+PKG_SOURCE_DATE:=2021-11-24
+PKG_SOURCE_VERSION:=23dcc03f03062593d8e25dec77f08b1d272f2d54
+PKG_MIRROR_HASH:=12f7e3e8091543d7923d8953151da0fc16ebbd4eb99a35f4a27afd24426ef443
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_SYSTEMBUS_SELINUX
+PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
+PKG_LICENSE:=MIT
+PKG_LICENSE_FILES:=LICENSE
+
+include $(INCLUDE_DIR)/package.mk
 
 define Package/systembus
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=System information via Ubus
-  DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libstdcpp +SYSTEMBUS_SELINUX:libselinux
+  TITLE:=System statistics via ubus
+  DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libstdcpp +jsoncpp
   MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 endef
 
 define Package/systembus/description
-  Provides cpu and system stats through ubus
+  systembus provides some statistics of running system via
+  ubus. systembus is written in C++.
 endef
 
-define Package/systembus/config
-  if PACKAGE_systembus
-	config SYSTEMBUS_SELINUX
-		bool "Enable SELinux support"
-		default n
-		help
-		  This option enables SELinux status retrieval
-  endif
-endef
-
-SELINUX_FLAGS:=
-
-ifeq ($(CONFIG_SYSTEMBUS_SELINUX),y)
-  DEPENDS+= +libselinux
-  SELINUX_FLAGS+= selinux=1
-endif
-
-define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		CXX="$(TARGET_CXX)" \
-		CXXFLAGS="$(TARGET_CXXFLAGS) -std=c++17 -Wall" \
-		LDFLAGS="-L$(STAGING_DIR)/lib -L$(STAGING_DIR)/usr/lib $(TARGET_LDFLAGS)" \
-		$(SELINUX_FLAGS)
+define Build/Configure
 endef
 
 define Package/systembus/install
