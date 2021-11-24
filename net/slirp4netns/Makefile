@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=slirp4netns
 PKG_VERSION:=1.1.9
-PKG_RELEASE:=1
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/rootless-containers/slirp4netns/archive/v$(PKG_VERSION)
@@ -26,7 +26,7 @@ define Package/slirp4netns
   SECTION:=net
   CATEGORY:=Network
   TITLE:=slirp4netns
-  DEPENDS:=+slirp +libseccomp +glib2
+  DEPENDS:=+libslirp +libseccomp +glib2 $(INTL_DEPENDS)
   URL:=https://github.com/rootless-containers/slirp4netns
 endef
 
