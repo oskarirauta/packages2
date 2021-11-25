@@ -1,0 +1,4 @@
+	config SYSTEMBUS_SELINUX
+		depends on PACKAGE_libselinux
+		bool "Build with support for SELinux"
+		default n

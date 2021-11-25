@@ -27,7 +27,7 @@ define Package/systembus
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=System statistics via ubus
-  DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libstdcpp +jsoncpp
+  DEPENDS:=+libubus +libubox +libblobmsg-json +libuci +libstdcpp +jsoncpp +SYSTEMBUS_SELINUX:libselinux
   MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 endef
 
@@ -36,8 +36,16 @@ define Package/systembus/description
   ubus. systembus is written in C++.
 endef
 
+define Package/systembus/config
+	source "$(SOURCE)/Config.in"
+endef
+
 define Build/Configure
 endef
+
+ifeq ($(CONFIG_SYSTEMBUS_SELINUX),y)
+MAKE_VARS += selinux=1
+endif
 
 define Package/systembus/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
