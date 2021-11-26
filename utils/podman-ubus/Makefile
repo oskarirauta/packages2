@@ -9,12 +9,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=podman-ubus
 PKG_VERSION:=0.96
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/podman-ubus.git
-PKG_SOURCE_DATE:=2021-11-24
-PKG_SOURCE_VERSION:=c0f9cfca99d4ddf452c3268ba7673c027ad3ecc4
+PKG_SOURCE_DATE:=2021-11-25
+PKG_SOURCE_VERSION:=e98ed5d84cf42e212bf7738f748aa79966fedf8f
 PKG_MIRROR_HASH:=780aa372ca4f9eb9b5dae59ad5e75c79d88b40b9eaba0fe374782d12d866ebf8
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
