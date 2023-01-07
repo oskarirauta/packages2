@@ -1,0 +1,26 @@
+
+if PACKAGE_refind
+
+choice
+        prompt "Selected library that refind is built-on"
+        default REFIND_TIANOCORE
+
+        config REFIND_TIANOCORE
+                bool "TianoCore EDK2"
+
+        config REFIND_GNUEFI
+                bool "GNU-EFI"
+endchoice
+
+choice
+	prompt "Architechture"
+	default REFIND_X64
+
+	config REFIND_X64
+		bool "x64"
+
+	config REFIND_IA32
+		bool "ia32"
+endchoice
+
+endif
