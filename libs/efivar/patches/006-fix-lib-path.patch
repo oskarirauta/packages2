@@ -1,0 +1,10 @@
+--- a/src/include/defaults.mk	2022-11-13 10:47:08.233727054 +0200
++++ b/src/include/defaults.mk	2022-11-13 10:47:15.157054477 +0200
+@@ -1,6 +1,6 @@
+ PREFIX	?= /usr
+ EXEC_PREFIX ?= $(PREFIX)
+-LIBDIR	?= $(PREFIX)/lib64
++LIBDIR	?= $(PREFIX)/lib
+ DATADIR	?= $(PREFIX)/share
+ MANDIR	?= $(DATADIR)/man
+ INCLUDEDIR ?= $(PREFIX)/include

@@ -1,0 +1,11 @@
+--- a/Makefile	2022-11-13 10:00:18.979458578 +0200
++++ b/Makefile	2022-11-13 10:00:33.542779479 +0200
+@@ -7,7 +7,7 @@
+ include $(TOPDIR)/src/include/coverity.mk
+ include $(TOPDIR)/src/include/scan-build.mk
+ 
+-SUBDIRS := src docs
++SUBDIRS := src
+ 
+ all : | efivar.spec src/include/version.mk prep
+ all clean install prep :

@@ -1,0 +1,28 @@
+--- a/src/Makefile	2022-11-13 09:44:28.926936280 +0200
++++ b/src/Makefile	2022-11-13 09:45:15.460229890 +0200
+@@ -14,7 +14,7 @@
+ TARGETS=$(LIBTARGETS) $(BINTARGETS) $(PCTARGETS)
+ STATICTARGETS=$(STATICLIBTARGETS) $(STATICBINTARGETS)
+ 
+-LIBEFISEC_SOURCES = sec.c secdb.c esl-iter.c util.c
++LIBEFISEC_SOURCES = sec.c secdb.c esl-iter.c util.c qsort_r_missing.c
+ LIBEFISEC_OBJECTS = $(patsubst %.c,%.o,$(LIBEFISEC_SOURCES))
+ LIBEFIBOOT_SOURCES = crc32.c creator.c disk.c gpt.c loadopt.c path-helpers.c \
+ 		     linux.c $(sort $(wildcard linux-*.c))
+@@ -28,7 +28,7 @@
+ EFISECDB_SOURCES = efisecdb.c guid-symbols.c secdb-dump.c util.c
+ EFISECDB_OBJECTS = $(patsubst %.S,%.o,$(patsubst %.c,%.o,$(EFISECDB_SOURCES)))
+ GENERATED_SOURCES = include/efivar/efivar-guids.h guid-symbols.c
+-MAKEGUIDS_SOURCES = makeguids.c util.c
++MAKEGUIDS_SOURCES = makeguids.c util.c qsort_r_missing.c
+ MAKEGUIDS_OBJECTS = $(patsubst %.S,%.o,$(patsubst %.c,%.o,$(MAKEGUIDS_SOURCES)))
+ MAKEGUIDS_OUTPUT = $(GENERATED_SOURCES) guids.lds
+ 
+@@ -81,7 +81,6 @@
+ 	if [ "$${missing}" != "no" ]; then \
+ 		exit 1 ; \
+ 	fi
+-	./makeguids $(LD_DASH_T) guids.txt guid-symbols.c include/efivar/efivar-guids.h guids.lds
+ 
+ prep : makeguids $(GENERATED_SOURCES)
+ 
