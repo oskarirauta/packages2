@@ -41,7 +41,7 @@ define Package/efibootmgr/description
   Note: efibootmgr requires either the efivarfs or the legacy efivars kernel module to be loaded prior to use.
 endef
 
-MAKE_VARS += EFIDIR="/boot/EFI" PCDIR="$(STAGING_DIR)/usr/lib/pkgconfig" EXTRAINCDIR="-I$(STAGING_DIR)/usr/include" EXTRALIBDIR="-L$(STAGING_DIR)/usr/lib"
+MAKE_VARS += EFIDIR="/boot/EFI" PCDIR="$(STAGING_DIR)/usr/lib/pkgconfig" EXTRAINCDIR="-I$(STAGING_DIR)/usr/include -I$(STAGING_DIR)/usr/include/efivar" EXTRALIBDIR="-L$(STAGING_DIR)/usr/lib"
 
 define Package/efibootmgr/install
 	$(INSTALL_DIR) $(1)/usr/sbin
