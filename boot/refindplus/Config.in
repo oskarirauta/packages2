@@ -1,0 +1,15 @@
+
+if PACKAGE_refindplus
+
+choice
+        prompt "Version"
+        default REFINDPLUS_RELEASE
+
+        config REFINDPLUS_RELEASE
+                bool "Release"
+
+        config REFINDPLUS_DEBUG
+                bool "Debug"
+endchoice
+
+endif
