@@ -35,13 +35,30 @@ define Package/refind
   SECTION:=boot
   CATEGORY:=Boot Loaders
   TITLE:=rEFInd EFI Boot Manager
-  DEPENDS:=@TARGET_x86_64 +efibootmgr
+  DEPENDS:=@TARGET_x86_64
   URL:=https://www.rodsbooks.com/refind
 endef
 
 define Package/refind/description
   rEFInd is a boot manager, meaning that it presents a menu of options to the
   user when the computer first starts up.
+
+  This package contains necessary files for EFI
+endef
+
+define Package/refind-scripts
+  SECTION:=boot
+  CATEGORY:=Boot Loaders
+  TITLE:=rEFInd EFI Boot Manager script
+  DEPENDS:=@TARGET_x86_64 refind +efibootmgr
+  URL:=https://www.rodsbooks.com/refind
+endef
+
+define Package/refind-scripts/description
+  rEFInd is a boot manager, meaning that it presents a menu of options to the
+  user when the computer first starts up.
+
+  This package contains scripts for installing rEFInd
 endef
 
 TIANO_ARCH=$(if $(CONFIG_REFIND_X64),x64,ia32)
@@ -57,7 +74,6 @@ endef
 
 define Package/refind/install
 	$(INSTALL_DIR) \
-		$(1)/usr/bin \
 		$(1)/usr/share/refind \
 		$(1)/usr/share/refind/drivers_$(TIANO_ARCH) \
 		$(1)/usr/share/refind/tools_$(TIANO_ARCH) \
@@ -70,12 +86,6 @@ define Package/refind/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind/drivers_$(TIANO_ARCH)/*.efi $(1)/usr/share/refind/drivers_$(TIANO_ARCH)/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind/tools_$(TIANO_ARCH)/*.efi $(1)/usr/share/refind/tools_$(TIANO_ARCH)/
 
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind-install $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind-mkdefault $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mkrlconf $(1)/usr/bin/refind-mkrlconf
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mvrefind $(1)/usr/bin/refind-mvrefind
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fonts/mkfont.sh $(1)/usr/bin/refind-mkfont
-	
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind/refind.conf-sample $(1)/usr/share/refind/
 	$(INSTALL_DATA) ./files/refind_linux.conf $(1)/usr/share/refind/
 
@@ -83,6 +93,16 @@ define Package/refind/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind/icons/*.png $(1)/usr/share/refind/icons/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/banners/*.{png,svg} $(1)/usr/share/refind/banners/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/keys/*.{cer,crt} $(1)/usr/share/refind/keys/
+endef
+
+define Package/refind-scripts/install
+	$(INSTALL_DIR) $(1)/usr/bin
+
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind-install $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind-mkdefault $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mkrlconf $(1)/usr/bin/refind-mkrlconf
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mvrefind $(1)/usr/bin/refind-mvrefind
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fonts/mkfont.sh $(1)/usr/bin/refind-mkfont
 
 	$(SED) 's|#!/bin/bash|#!/bin/sh|g' -i $(1)/usr/bin/*
 	$(SED) 's|#!/usr/bin/env bash|#!/bin/sh|g' -i $(1)/usr/bin/*
@@ -91,3 +111,4 @@ define Package/refind/install
 endef
 
 $(eval $(call BuildPackage,refind))
+$(eval $(call BuildPackage,refind-scripts))
