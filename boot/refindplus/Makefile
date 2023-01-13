@@ -33,7 +33,7 @@ define Package/refindplus
   SECTION:=boot
   CATEGORY:=Boot Loaders
   TITLE:=A variant of the rEFInd boot manager
-  DEPENDS:=@TARGET_x86_64 +efibootmgr
+  DEPENDS:=@TARGET_x86_64
   URL:=https://github.com/dakanji/RefindPlus
 endef
 
@@ -51,6 +51,21 @@ define Package/refindplus/description
   However, the enhancements added to RefindPlus are not limited in scope to those units and include
   several UEFI-PC and other Apple Mac related enhancements that may be of interest to anyone
   requiring a capable and flexible boot manager.
+
+  NOTE: This package does not come with install scripts.
+endef
+
+define Download/refind-conf
+  URL_FILE:=refind-bin-0.13.3.1.zip
+  URL:=https://downloads.sourceforge.net/project/refind/0.13.3.1/
+  FILE:=refind-conf-0.13.3.1.zip
+  HASH:=44a981538cf06e683bc095e11694ce8508826fcc6ca6229e116938575e7c4c54
+endef
+
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	$(eval $(call Download,refind-conf))
+	unzip -q -d $(PKG_BUILD_DIR) $(DL_DIR)/refind-conf-0.13.3.1.zip
 endef
 
 define Build/Configure
@@ -64,7 +79,6 @@ endef
 
 define Package/refindplus/install
 	$(INSTALL_DIR) \
-		$(1)/usr/bin \
 		$(1)/usr/share/refindplus \
 		$(1)/usr/share/refindplus/drivers_x64 \
 		$(1)/usr/share/refindplus/tools_x64 \
@@ -73,27 +87,16 @@ define Package/refindplus/install
 		$(1)/usr/share/refindplus/banners \
 		$(1)/usr/share/refindplus/keys		
 
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/RefindPlus_x64-$(if $(CONFIG_REFINDPLUS_DEBUG),DBG,REL).efi $(1)/usr/share/refindplus/refindplus.efi
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/RefindPlus_x64-$(if $(CONFIG_REFINDPLUS_DEBUG),DBG,REL).efi $(1)/usr/share/refindplus/refindplus_x64.efi
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/OtherBinaries/*.efi $(1)/usr/share/refindplus/drivers_x64/
 
-	#$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind-install $(1)/usr/bin/refindplus-install
-	#$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind-mkdefault $(1)/usr/bin/refindplus-mkdefault
-	#$(INSTALL_BIN) $(PKG_BUILD_DIR)/mkrlconf $(1)/usr/bin/refindplus-mkrlconf
-	#$(INSTALL_BIN) $(PKG_BUILD_DIR)/mvrefind $(1)/usr/bin/refindplus-mvrefind
-	#$(INSTALL_BIN) $(PKG_BUILD_DIR)/fonts/mkfont.sh $(1)/usr/bin/refindplus-mkfont
-	
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/config.conf $(1)/usr/share/refindplus/refind.conf-sample
 	$(INSTALL_DATA) ./files/refind_linux.conf $(1)/usr/share/refindplus/
 
-	#$(INSTALL_DATA) $(PKG_BUILD_DIR)/fonts/*.png $(1)/usr/share/refindplus/fonts/
-	#$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind/icons/*.png $(1)/usr/share/refindplus/icons/
-	#$(INSTALL_DATA) $(PKG_BUILD_DIR)/banners/*.{png,svg} $(1)/usr/share/refindplus/banners/
-	#$(INSTALL_DATA) $(PKG_BUILD_DIR)/keys/*.{cer,crt} $(1)/usr/share/refindplus/keys/
-
-	#$(SED) 's|#!/bin/bash|#!/bin/sh|g' -i $(1)/usr/bin/*
-	#$(SED) 's|#!/usr/bin/env bash|#!/bin/sh|g' -i $(1)/usr/bin/*
-	#$(SED) 's|#!/usr/bin/env python3|#!/usr/bin/python3|g' -i $(1)/usr/bin/*
-	#$(SED) 's|RefindDir=\"\$ThisDir/refind\"|RefindDir=\"/usr/share/refindplus/\"|g' -i $(1)/usr/bin/refindplus-install
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind-bin-0.13.3.1/fonts/*.png $(1)/usr/share/refindplus/fonts/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind-bin-0.13.3.1/refind/icons/*.png $(1)/usr/share/refindplus/icons/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind-bin-0.13.3.1/banners/*.{png,svg} $(1)/usr/share/refindplus/banners/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/refind-bin-0.13.3.1/keys/*.{cer,crt} $(1)/usr/share/refindplus/keys/
 endef
 
 $(eval $(call BuildPackage,refindplus))
