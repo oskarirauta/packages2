@@ -5,9 +5,11 @@ PKG_NAME:=boot-entry
 PKG_VERSION:=0.9.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/oskarirauta/boot-entry/archive/refs/tags/
-PKG_HASH:=c90493f986e5bd407132c5a3e174378c02cb80fa4eaee29875e06b4bba6afcc3
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/oskarirauta/boot-entry.git
+PKG_SOURCE_DATE:=2023-01-16
+PKG_SOURCE_VERSION:=283bdff4b4fede612e0e0d3aa98dfeb0929f4095
+PKG_SOURCE_HASH:=skip
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
