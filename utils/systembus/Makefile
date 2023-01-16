@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=systembus
-PKG_VERSION:=0.95
+PKG_VERSION:=0.96
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/systembus.git
-PKG_SOURCE_DATE:=2021-11-24
-PKG_SOURCE_VERSION:=23dcc03f03062593d8e25dec77f08b1d272f2d54
-PKG_MIRROR_HASH:=12f7e3e8091543d7923d8953151da0fc16ebbd4eb99a35f4a27afd24426ef443
+PKG_SOURCE_DATE:=2023-01-16
+PKG_SOURCE_VERSION:=d05fe30b1fb2912a53fe593c1ab4d7e258e94c78
+PKG_MIRROR_HASH:=3dc07d630f6788b4571e8fc4b8d909fd265d7a5d3885c3a4975f26f37c7d2849
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
@@ -46,6 +46,8 @@ endef
 ifeq ($(CONFIG_SYSTEMBUS_SELINUX),y)
 MAKE_VARS += selinux=1
 endif
+
+TARGET_CXXFLAGS += -Wno-builtin-declaration-mismatch
 
 define Package/systembus/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
