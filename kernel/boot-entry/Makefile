@@ -2,12 +2,12 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=boot-entry
-PKG_VERSION:=0.99
+PKG_VERSION:=0.9.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/boot-entry/archive/refs/tags/
-PKG_HASH:=ce7dcb4d64dec9c5516cde5f7f5231b8bdffc672fb76f0ed711470067530029d
+PKG_HASH:=c90493f986e5bd407132c5a3e174378c02cb80fa4eaee29875e06b4bba6afcc3
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
