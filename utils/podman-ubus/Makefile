@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=podman-ubus
-PKG_VERSION:=0.96
-PKG_RELEASE:=2
+PKG_VERSION:=0.97
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/podman-ubus.git
-PKG_SOURCE_DATE:=2021-11-25
-PKG_SOURCE_VERSION:=d7434b5a842d74dc6985a04a9a1ddb948f668a5f
-PKG_MIRROR_HASH:=729277bed9ee34c7c68b6950ca790c7589172c9a76daf869d6e5aba8932d611e
+PKG_SOURCE_DATE:=2023-02-15
+PKG_SOURCE_VERSION:=d9e54c181d64aa3ccfd30ff7efa643335da50a1f
+PKG_MIRROR_HASH:=9bdb668377cf5c6e541b404430968d3535727a4d38617e34baa14d9a5287fdc8
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
@@ -37,8 +37,12 @@ define Package/podman-ubus/description
   ubus.
 
   podman-ubus is written in C++ except for ubus parts which are
-  externed from C.
+  externed from C. It uses staticly linked libcurl for unix
+  socket operations.
 endef
+
+MAKE_VARS += \
+	BUILD_DIR="$(PKG_BUILD_DIR)"
 
 define Build/Configure
 endef
