@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libc-stubs
 PKG_VERSION:=20230222
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 
