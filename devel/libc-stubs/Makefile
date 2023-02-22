@@ -38,6 +38,7 @@ define Package/libc-stubs/install
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libpthread.a
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libdl.a
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/librt.a
+	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libresolv.a
 endef
 
 $(eval $(call BuildPackage,libc-stubs))
