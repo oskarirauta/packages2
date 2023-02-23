@@ -39,6 +39,7 @@ define Package/libc-stubs/install
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libdl.a
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/librt.a
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libresolv.a
+	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libcrypt.a
 endef
 
 $(eval $(call BuildPackage,libc-stubs))
