@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libc-stubs
 PKG_VERSION:=20230223
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 
@@ -40,6 +40,9 @@ define Package/libc-stubs/install
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/librt.a
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libresolv.a
 	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libcrypt.a
+	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libutil.a
+	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libxnet.a
+	$(INSTALL_DATA) ./files/stub.a $(1)/lib/libm.a
 endef
 
 $(eval $(call BuildPackage,libc-stubs))
