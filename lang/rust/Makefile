@@ -106,7 +106,7 @@ endef
 # We just need to extract and install
 define Host/Install
 
-	[ "$RUST_INSTALL_TARGET_FILENAME" = "$RUST_INSTALL_HOST_FILENAME" ] && {
+	[ "$(RUST_INSTALL_TARGET_FILENAME)" = "$(RUST_INSTALL_HOST_FILENAME)" ] && {
 		$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME)
 	} || {
 		$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_HOST_FILENAME) && \
@@ -130,7 +130,7 @@ endef
 # Packages the Distribution Artifacts into HOST and TARGET bundles.
 define Host/PackageDist
 
-	[ "$RUST_INSTALL_TARGET_FILENAME" = "$RUST_INSTALL_HOST_FILENAME" ] && {
+	[ "$(RUST_INSTALL_TARGET_FILENAME)" = "$(RUST_INSTALL_HOST_FILENAME)" ] && {
 		cd $(HOST_BUILD_DIR)/build/dist && \
 		  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME) \
 		  rust-*-$(RUSTC_TARGET_ARCH).tar.xz
