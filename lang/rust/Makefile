@@ -105,6 +105,7 @@ endef
 # Distribution Artifacts are packaged by Host/PackageDist
 # We just need to extract and install
 define Host/Install
+
 	[ "$RUST_INSTALL_TARGET_FILENAME" = "$RUST_INSTALL_HOST_FILENAME" ] && {
 		$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME)
 	} || {
@@ -113,6 +114,7 @@ define Host/Install
 	}
 
 	cp ./files/rustc $(RUST_TMP_DIR)/rustc-wrapper
+
 	cd $(RUST_TMP_DIR) && \
 	  find -iname "*.xz" -exec tar -xJf {} ";" && \
 	  find ./* -type f -name install.sh -execdir sh {} --prefix=$(CARGO_HOME) --disable-ldconfig \;
