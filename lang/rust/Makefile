@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
 PKG_VERSION:=1.67.1
-PKG_RELEASE:=2
+PKG_RELEASE:=1
 
 PKG_LICENSE:=Apache-2.0 MIT
 PKG_LICENSE_FILES:=LICENSE-APACHE LICENSE-MIT
@@ -19,7 +19,6 @@ PKG_HASH:=46483d3e5de85a3bd46f8e7a3ae1837496391067dbe713a25d3cf051b3d9ff6e
 
 PKG_HOST_ONLY:=1
 
-include $(INCLUDE_DIR)/cmake.mk
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
@@ -48,7 +47,9 @@ TARGET_CONFIGURE_ARGS = \
   --set=target.$(RUSTC_TARGET_ARCH).ranlib=$(TARGET_RANLIB) \
   --set=target.$(RUSTC_TARGET_ARCH).crt-static=false \
   --set=rust.codegen-units=1 \
-  --set=rust.codegen-units-std=1
+  --set=rust.codegen-units-std=1 \
+  --set=rust.description=openwrt \
+  --tools="analysis,cargo,clippy,src,rustfmt"
 
 # CARGO_HOME is an environmental
 HOST_CONFIGURE_OPTS += CARGO_HOME="$(CARGO_HOME)" PKG_CONFIG_ALLOW_CROSS=1
@@ -73,6 +74,7 @@ HOST_CONFIGURE_ARGS = \
   --disable-sanitizers \
   --release-channel=stable \
   --enable-cargo-native-static \
+  --enable-extended \
   ${TARGET_CONFIGURE_ARGS}
 
 define Host/Prepare
@@ -103,26 +105,42 @@ endef
 # Distribution Artifacts are packaged by Host/PackageDist
 # We just need to extract and install
 define Host/Install
-	$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_HOST_FILENAME) && \
-	$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME)
+	[ "$RUST_INSTALL_TARGET_FILENAME" = "$RUST_INSTALL_HOST_FILENAME" ] && {
+		$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME)
+	} || {
+		$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_HOST_FILENAME) && \
+		$(TAR) -C $(RUST_TMP_DIR) -xJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME)
+	}
 
+	cp ./files/rustc $(RUST_TMP_DIR)/rustc-wrapper
 	cd $(RUST_TMP_DIR) && \
 	  find -iname "*.xz" -exec tar -xJf {} ";" && \
 	  find ./* -type f -name install.sh -execdir sh {} --prefix=$(CARGO_HOME) --disable-ldconfig \;
 
-	echo -e "[target.$(RUSTC_TARGET_ARCH)]\nlinker = \"$(TARGET_CC_NOCACHE)\"\nrustflags = [\"-Ctarget-feature=-crt-static\"]" > $(CARGO_HOME)/config
+	mv $(CARGO_HOME)/bin/rustc $(CARGO_HOME)/bin/rustc-bin
+	cp $(RUST_TMP_DIR)/rustc-wrapper $(CARGO_HOME)/bin/rustc
+
+	#echo -e "[target.$(RUSTC_TARGET_ARCH)]\nlinker = \"$(TARGET_CC_NOCACHE)\"\nrustflags = [\"-Ctarget-feature=-crt-static\"]" > $(CARGO_HOME)/config
+	echo -e "[target.$(RUSTC_TARGET_ARCH)]\nlinker = \"$(TARGET_CC_NOCACHE)\"\nrustflags = []" > $(CARGO_HOME)/config
 	echo -e "\n[profile.stripped]\ninherits = \"release\"\nopt-level = \"s\"\nstrip = true" >> $(CARGO_HOME)/config
 endef
 
 # Packages the Distribution Artifacts into HOST and TARGET bundles.
 define Host/PackageDist
-	cd $(HOST_BUILD_DIR)/build/dist && \
-	  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME) \
-	  rust-*-$(RUSTC_TARGET_ARCH).tar.xz
 
-	cd $(HOST_BUILD_DIR)/build/dist && \
-	  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_HOST_FILENAME) \
-	  --exclude rust-*-$(RUSTC_TARGET_ARCH).tar.xz *.xz
+	[ "$RUST_INSTALL_TARGET_FILENAME" = "$RUST_INSTALL_HOST_FILENAME" ] && {
+		cd $(HOST_BUILD_DIR)/build/dist && \
+		  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME) \
+		  rust-*-$(RUSTC_TARGET_ARCH).tar.xz
+	} || {
+		cd $(HOST_BUILD_DIR)/build/dist && \
+		  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME) \
+		  rust-*-$(RUSTC_TARGET_ARCH).tar.xz
+
+		cd $(HOST_BUILD_DIR)/build/dist && \
+		  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_HOST_FILENAME) \
+		  --exclude rust-*-$(RUSTC_TARGET_ARCH).tar.xz *.xz
+	}
 endef
 
 define Package/rust
