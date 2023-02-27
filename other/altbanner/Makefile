@@ -34,6 +34,7 @@ Build/Compile = $(Build/Compile/Default)
 define Package/altbanner/install
 	$(INSTALL_DIR) $(1)/etc
 	$(CP) ./files/banner.unsafe $(1)/etc/
+	$(VERSION_SED_SCRIPT) $(1)/etc/banner.unsafe
 endef
 
 $(eval $(call BuildPackage,altbanner))
