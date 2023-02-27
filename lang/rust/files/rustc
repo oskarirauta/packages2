@@ -1,3 +1,0 @@
-#!/bin/sh
-
-${CARGO_HOME}/bin/rustc-bin $@ -C target-feature=-crt-static
