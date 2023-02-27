@@ -10,12 +10,16 @@ include $(INCLUDE_DIR)/package.mk
 define Package/altbanner
 	SECTION:=base
 	CATEGORY:=Base system
-	TITLE:=Unsafe banner
+	TITLE:=banner for passwordless root
 	PKGARCH:=all
 endef
 
 define Package/altbanner/description
- This package contains alternative banner.unsafe for private needs.
+ Unsafe banner - or banner for passwordless root logon.
+ This package contains alternative banner.unsafe for
+ that is displayed during logon if root's password is
+ unset. Made for private needs, requires modified
+ /etc/profile file.
 endef
 
 define Build/Prepare
