@@ -133,7 +133,7 @@ define Host/PackageDist
 	# for target == host
 	cd $(HOST_BUILD_DIR)/build/dist && \
 	  $(TAR) -cJf $(DL_DIR)/$(RUST_INSTALL_TARGET_FILENAME) \
-	  rust-*-$(RUSTC_TARGET_ARCH).tar.xz
+	  *.xz
 	# end
 
 	# for target != host
