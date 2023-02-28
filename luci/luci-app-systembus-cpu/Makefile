@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-systembus-cpu
-PKG_VERSION:=0.9
+PKG_VERSION:=0.91
 PKG_RELEASE:=$(AUTORELEASE)
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 
