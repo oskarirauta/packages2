@@ -26,6 +26,15 @@ function cpu_progressbar(value) {
 	}, E('div', { 'style': 'width:%.2f%%'.format(vn) }));
 }
 
+function cpu_temperaturebar(value) {
+        var vn = parseInt(value) || 0;
+
+        return E('div', {
+                'class': 'cbi-progressbar',
+                'title': '+%s C'.format(vn)
+        }, E('div', { 'style': 'width:%.2f%%'.format(vn) }));
+}
+
 return baseclass.extend({
 	title: _('CPU Load'),
 
@@ -80,7 +89,7 @@ return baseclass.extend({
 
 			table.appendChild(E('tr', { 'class': 'tr' }, [
 				E('td', { 'class': 'td left', 'width': '33%' }, [ fields[i] ]),
-				E('td', { 'class': 'td left' }, [ cpu_progressbar(fields[i + 1]) ])
+				E('td', { 'class': 'td left' }, [ fields[i] == _('Temperature') ? cpu_temperaturebar(fields[i + 1]) : cpu_progressbar(fields[i + 1]) ])
 			]));
 		}
 
