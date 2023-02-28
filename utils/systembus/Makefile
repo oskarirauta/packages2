@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=systembus
-PKG_VERSION:=0.98
+PKG_VERSION:=0.99
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/systembus.git
-PKG_SOURCE_DATE:=2023-01-21
-PKG_SOURCE_VERSION:=bf33e00c202d8d8e6ab39d32ab5335a9b05632a8
+PKG_SOURCE_DATE:=2023-02-28
+PKG_SOURCE_VERSION:=d2c0b31fddd3336025054ab417e191128d3ff0ee
 PKG_MIRROR_HASH:=skip
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
@@ -32,7 +32,7 @@ define Package/systembus
 endef
 
 define Package/systembus/description
-  systembus provides some statistics of running system via
+  systembus provides statistics of running system via
   ubus. systembus is written in C++.
 endef
 
