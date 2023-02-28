@@ -7,6 +7,11 @@ var callCpuInfo = rpc.declare({
 	method: 'list'
 });
 
+var callCpuTemp = rpc.declare({
+	object: 'system.cpu',
+	method: 'temp'
+});
+
 var callInfo = rpc.declare({
 	object: 'system.info',
 	method: 'list'
@@ -27,6 +32,7 @@ return baseclass.extend({
 	load: function() {
 		return Promise.all([
 			L.resolveDefault(callCpuInfo(), {}),
+			L.resolveDefault(callCpuTemp(), {}),
 			L.resolveDefault(callInfo(), {})
 		]);
 	},
@@ -34,7 +40,8 @@ return baseclass.extend({
 	render: function(data) {
 
 		var cpuinfo	= data[0],
-		    systeminfo2	= data[1];
+		    cputemp     = data[1],
+		    systeminfo2	= data[2];
 
 		if ( !systeminfo2.systembus_loaded )
 			return E('table', { 'class': 'table' }, [
@@ -45,6 +52,7 @@ return baseclass.extend({
 				])]);
 
 		var fields = [
+			_('Temperature'), cputemp.temperature,
 			_('Total'), ( cpuinfo.cpu != null && cpuinfo.cpu1 != null ) ? cpuinfo.cpu : null,
 			'cpu0', cpuinfo.cpu0,
 			'cpu1', cpuinfo.cpu1,

@@ -45,7 +45,7 @@ LINE_NO=$$(echo $$LINE_NO | head -n1 | cut -d ":" -f1)
 	exit 1
 }
 
-REP="\t\\\"luci-mod-status-cpu\\\": {\n\t\t\\\"description\\\": \\\"Grant access to cpu load display\\\",\n\t\t\\\"read\\\": {\n\t\t\t\\\"ubus\\\": {\n\t\t\t\t\\\"system.cpu\\\": [ \\\"list\\\" ]\n\t\t\t}\n\t\t}\n\t},\n"
+REP="\t\\\"luci-mod-status-cpu\\\": {\n\t\t\\\"description\\\": \\\"Grant access to cpu load display\\\",\n\t\t\\\"read\\\": {\n\t\t\t\\\"ubus\\\": {\n\t\t\t\t\\\"system.cpu\\\": [ \\\"list\\\", \\\"temp\\\", \\\"temperature\\\" ]\n\t\t\t}\n\t\t}\n\t},\n"
 PAT="{ if (NR == $${LINE_NO}) print \"$${REP}\"; print \$$0 }"
 
 awk -e "$$PAT" $$TMP_FILE > $${TMP_FILE}.new
