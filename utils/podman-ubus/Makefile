@@ -51,6 +51,8 @@ define Package/podman-ubus/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/podman-ubus $(1)/usr/bin/
 	$(INSTALL_BIN) ./files/podman-ubus.init $(1)/etc/init.d/podman-ubus
+	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
+		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,podman-ubus))
