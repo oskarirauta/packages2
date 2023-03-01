@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cni-protocol
-PKG_VERSION:=20230217
+PKG_VERSION:=20230302
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
