@@ -1,10 +1,3 @@
-0;83;19M0;83;19m#
-# Copyright (C) 2016 Rafał Miłecki <rafal@milecki.pl>
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=podman-ubus
