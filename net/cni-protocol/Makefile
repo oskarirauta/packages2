@@ -12,11 +12,10 @@ define Package/cni-protocol/Default
 endef
 
 define Package/cni-protocol
-	SECTION:=net
-	CATEGORY:=Network
-	TITLE:=cni netifd protocol
-	DEPENDS:=cni-plugins
-	PKGARCH:=all
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=cni netifd protocol
+  PKGARCH:=all
 endef
 
 define Package/cni-protocol/description
