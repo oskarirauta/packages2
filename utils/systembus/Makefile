@@ -53,6 +53,8 @@ define Package/systembus/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/systembus $(1)/usr/bin/
 	$(INSTALL_BIN) ./files/systembus.init $(1)/etc/init.d/systembus
+	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
+		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,systembus))
