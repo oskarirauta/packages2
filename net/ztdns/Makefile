@@ -40,6 +40,8 @@ define Package/ztdns/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
+	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
+		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
 endef
 
 $(eval $(call GoBinPackage,ztdns))
