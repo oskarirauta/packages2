@@ -1,4 +1,4 @@
-#
+0;83;19M0;83;19m#
 # Copyright (C) 2016 Rafał Miłecki <rafal@milecki.pl>
 #
 # This is free software, licensed under the GNU General Public License v2.
@@ -13,9 +13,9 @@ PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/podman-ubus.git
-PKG_SOURCE_DATE:=2023-02-15
-PKG_SOURCE_VERSION:=d9e54c181d64aa3ccfd30ff7efa643335da50a1f
-PKG_MIRROR_HASH:=9bdb668377cf5c6e541b404430968d3535727a4d38617e34baa14d9a5287fdc8
+PKG_SOURCE_DATE:=2023-03-02
+PKG_SOURCE_VERSION:=57b8cbf92f9d4c729db409dc754e327751e7a0d3
+PKG_MIRROR_HASH:=skip
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
