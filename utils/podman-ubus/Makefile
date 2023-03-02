@@ -8,7 +8,7 @@ PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/podman-ubus.git
 PKG_SOURCE_DATE:=2023-03-02
 PKG_SOURCE_VERSION:=57b8cbf92f9d4c729db409dc754e327751e7a0d3
-PKG_MIRROR_HASH:=skip
+PKG_MIRROR_HASH:=6492303f1d3fc18a409acb24ba8f5f494ce9bed2c24f1733a33cf5ae11c39966
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
