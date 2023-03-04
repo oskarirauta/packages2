@@ -148,7 +148,7 @@ return baseclass.extend({
 				]));
 
 				containerRow.appendChild(E('td', { 'class': 'td left', 'style': rowStyle }, [
-					container.running && !container.busy.state ? ( container.uptime.days + 'd ' + container.uptime.hours + 'h ' + container.uptime.minutes + 's' ) :
+					container.running && !container.busy.state ? ( container.uptime.days + 'd ' + container.uptime.hours + 'h ' + container.uptime.minutes + 'm' ) :
 						''
 				]));
 
