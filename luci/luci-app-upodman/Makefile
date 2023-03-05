@@ -11,7 +11,7 @@ LUCI_PKGARCH:=all
 
 include ../../../luci/luci.mk
 
-define Package/luci-app-podman-ubus/postinst
+define Package/luci-app-upodman/postinst
 #!/bin/sh
 
 TARGET_PATH="$${IPKG_INSTROOT}/usr/share/rpcd/acl.d"
