@@ -11,16 +11,16 @@ PKG_HASH:=4662f233f2c2e0400981299d09086e36d64ffec541233923e019702d378ff418
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
-PKG_INSTALL:=0
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/upodman
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Podman manager via Ubus
   URL:=https://github.com/oskarirauta/upodman
-  DEPENDS:=+libjson-c +libstdcpp +libubox +libuci +libblobmsg-json +libubus +podman @LIBCURL_UNIX_SOCKETS
+  DEPENDS:=+libjson-c +libstdcpp +libubox +libuci +libblobmsg-json +libubus +libcurl +podman @LIBCURL_UNIX_SOCKETS
 endef
 
 define Package/upodman/description
