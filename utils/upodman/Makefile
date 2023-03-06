@@ -20,7 +20,7 @@ define Package/upodman
   CATEGORY:=Utilities
   TITLE:=Podman manager via Ubus
   URL:=https://github.com/oskarirauta/upodman
-  DEPENDS:=+libjson-c +libstdcpp +libubox +libuci +libblobmsg-json +libubus +libcurl +podman @LIBCURL_UNIX_SOCKETS
+  DEPENDS:=+libjson-c +libstdcpp +libubox +libuci +libblobmsg-json +libubus +libcurl +podman
 endef
 
 define Package/upodman/description
