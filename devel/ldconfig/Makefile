@@ -12,11 +12,10 @@ define Package/ldconfig/Default
 endef
 
 define Package/ldconfig
-	SECTION:=devel
-	CATEGORY:=Development
-	SUBMENU:=Libraries
-	TITLE:=ldconfig script
-	PKGARCH:=all
+  SECTION:=devel
+  CATEGORY:=Development
+  TITLE:=ldconfig script
+  PKGARCH:=all
 endef
 
 define Package/ldconfig/description
