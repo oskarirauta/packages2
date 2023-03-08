@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=buildroot-env
-PKG_VERSION:=20230305
+PKG_VERSION:=20230308
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
@@ -22,7 +22,7 @@ define Package/buildroot-env
 		+coreutils-nproc +coreutils-od +coreutils-mkdir +coreutils-date +coreutils-comm +coreutils-printf \
 		+coreutils-ln +coreutils-cp +coreutils-split +coreutils-csplit +coreutils-cksum +coreutils-expr \
 		+coreutils-tr +coreutils-test +coreutils-uniq \
-		+libncurses-dev +zlib-dev +xz-utils +tar +ldconfig \
+		+libncurses-dev +zlib-dev +xz-utils +tar +ldconfig-script \
 		+bash +quilt +htop +whereis +less +file +findutils +findutils-locate +chattr +lsattr +xxd \
 		+perlbase-ipc +perlbase-module +perlbase-extutils \
 		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype \
