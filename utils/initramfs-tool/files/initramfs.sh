@@ -79,7 +79,6 @@ validate_action() {
 	}
 }
 
-
 usage() {
 	local __wantc="$1"
 	local __wantx="$2"
@@ -147,7 +146,6 @@ get_tmpfile() {
 
 get_yes() {
 	local _key
-
 	stty raw
 	_key=$(dd bs=1 count=1 2> /dev/null)
 	stty -raw

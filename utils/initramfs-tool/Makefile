@@ -12,6 +12,7 @@ define Package/initramfs-tool
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=initramfs utility
+  DEPENDS:=blkid
   PKGARCH:=all
 endef
 
