@@ -284,8 +284,9 @@ insmod /lib/modules/nls_iso8859-1.ko
 insmod /lib/modules/fat.ko
 insmod /lib/modules/vfat.ko
 
-echo 5 > /proc/sys/kernel/printk
 echo -e "\e[?25l"
+
+# mount root begins
 
 ROOTUUID=\$(cat /proc/cmdline | sed -e 's/^.*root=//' -e 's/ .*\$//' | cut -d '=' -f 2)
 [ -z "\$ROOTUUID" ] && exit_shell "root partition's uuid parsing has failed"
@@ -294,7 +295,7 @@ ROOTPART=\$(/usr/sbin/blkid | grep "\$ROOTUUID" | cut -d ':' -f 1)
 
 mount "\$ROOTPART" /mnt || exit_shell "failed to mount root partition \$ROOTPART to /mnt"
 
-# put your init stuff here
+# initramfs ends
 
 umount /proc /sys
 mount --move /dev /mnt/dev
