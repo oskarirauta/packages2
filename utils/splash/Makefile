@@ -31,14 +31,14 @@ endef
 define Build/Configure
 endef
 
-TARGET_LDFLAGS += -w -static
 MAKE_VARS += LIBS="$(STAGING_DIR)/usr/lib/libfreetype.a $(STAGING_DIR)/usr/lib/libjpeg.a $(STAGING_DIR)/usr/lib/libpng16.a $(STAGING_DIR)/usr/lib/libz.a"
 
 define Package/splash/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/splash/fonts $(1)/usr/share/splash/images
-	$(INTALL_BIN) $(PKG_BUILD_DIR)/splash $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/splash $(1)/usr/bin/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/res/fonts/** $(1)/usr/share/splash/fonts/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/res/images/** $(1)/usr/share/splash/images/
+	$(INSTALL_DATA) ./files/openwrt.png $(1)/usr/share/splash/images/
 
 	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
 		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
