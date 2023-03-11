@@ -24,7 +24,8 @@ check_usage() {
 check_extract() {
 	local __wantx=""
 
-	[ "$1" = "extract" -o "$1" = "x" ] && __wantx="true"
+	[ -z "$3" ] && \
+		[ "$1" = "extract" -o "$1" = "x" ] && __wantx="true"
 	[ "$1" = "--extract" -o "$1" = "-extract" ] && __wantx="true"
 	[ "$1" = "--x" -o "$1" = "-x" ] && __wantx="true"
 
@@ -34,7 +35,8 @@ check_extract() {
 check_create() {
 	local __wantc=""
 
-	[ "$1" = "create" -o "$1" = "c" ] && __wantc="true"
+	[ -z "$3" ] && \
+		[ "$1" = "create" -o "$1" = "c" ] && __wantc="true"
 	[ "$1" = "--create" -o "$1" = "-create" ] && __wantc="true"
 	[ "$1" = "--c" -o "$1" = "-c" ] && __wantc="true"
 
@@ -44,7 +46,8 @@ check_create() {
 check_build() {
 	local __wantb=""
 
-	[ "$1" = "build" -o "$1" = "b" ] && __wantb="true"
+	[ -z "$3" ] && \
+		[ "$1" = "build" -o "$1" = "b" ] && __wantb="true"
 	[ "$1" = "--build" -o "$1" = "-build" ] && __wantb="true"
 	[ "$1" = "--b" -o "$1" = "-b" ] && __wantb="true"
 
@@ -79,15 +82,34 @@ validate_action() {
 	}
 }
 
+validate_arg() {
+	local  __wante
+
+	check_usage "$1" __wante "true"
+
+	[ -n "$__wante" ] && {
+		echo "Usage:"
+		initrd_help
+		exit 0
+	}
+
+	[ -z "$__wante" ] && check_create "$1" __wante "true"
+	[ -z "$__wante" ] && check_extract "$1" __wante "true"
+	[ -z "$__wante" ] && check_build "$1" __wante "true"
+
+	[ -n "$__wante" ] && \
+		exiterr "$1 cannot be combined with $2"
+}
+
 usage() {
 	local __wantc="$1"
 	local __wantx="$2"
 	local __wantb="$3"
 	local __exe=$(basename "$EXE")
 
-	echo "Usage:"
-
 	validate_action "$__wantc" "$__wantx" "$__wantb"
+
+	echo "Usage:"
 
 	[ "$__wantc" = "true" ] && {
 		echo "  $__exe --create FILENAME SOURCEPATH"
@@ -161,13 +183,14 @@ get_newfile() {
 	local __bname=$(basename "${__fpath:-$1}")
 	local __dname=$(dirname "$1")
 	local __yes
+	local __msg="Generating initramfs file $1"
 
 	[ -z "$__fpath" ] && __fpath="${__dname}/${__bname}"
 	[ -n "$__fpath" -a -d "$__fpath" ] && exiterr "file $1 is directory; enter filename as argument"
 	[ -n "$__fpath" -a -e "$__fpath" ] && {
 		[ -d "$__fpath" ] && exiterr "$__fpath is directory; enter filename as argument"
 		[ -f "$__fpath" ] || exiterr "$__fpath is not file; enter filename as argument"
-		echo "file $1 already exists, do you want to remove it? [y/N]"
+		echo -n "file $1 already exists, do you want to overwrite it? [y/N] "
 		get_yes __yes
 		[ -z "$__yes" ] && {
 			echo "Aborted."
@@ -175,11 +198,13 @@ get_newfile() {
 		}
 		rm -f "$__fpath"
 		[ -f "$__fpath" ] && exiterr "failed to remove $__fpath - aborting"
+		__msg="Overwriting file $1"
 	}
 	[ -z "$__fpath" ] && exiterr "unknown error, cannot resolve target file"
 	touch "$__fpath"
 	[ -f "$__fpath" ] && __fpath=$(readlink -f "$__fpath") || exiterr "file $__fpath is not writable"
 	rm -f "$__fpath"
+	echo "$__msg"
 	export "$2=$__fpath"
 }
 
@@ -200,7 +225,6 @@ link_bb() {
 }
 
 initrd_extract() {
-
 	local __file __dir __pwd
 
 	get_file "$1" __file
@@ -235,17 +259,11 @@ initrd_build() {
 
 	cd "$__dir"
 
-	mkdir -p bin boot dev etc lib mnt proc root sbin sys usr mnt usr/lib usr/bin usr/sbin lib/modules
+	mkdir -p bin boot dev etc lib/modules mnt proc root sbin sys usr/bin mnt usr/lib usr/sbin
 
-	link_bb awk basename blockdev cat clear cut echo egrep env expr false fgrep find findfs grep head \
-		insmod ls lsmod mkdir mknod mktemp modinfo modprobe mount mountpoint pivot_root readlink \
-		realpath reset rmmod sed sh sleep stty switch_root sync tee touch tty umount yes
-
-	cp /lib/modules/$(uname -r)/fat.ko lib/modules/
-	cp /lib/modules/$(uname -r)/nls_cp437.ko lib/modules/
-	cp /lib/modules/$(uname -r)/nls_cp852.ko lib/modules/
-	cp /lib/modules/$(uname -r)/nls_iso8859-1.ko lib/modules/
-	cp /lib/modules/$(uname -r)/vfat.ko lib/modules/
+	link_bb awk basename blockdev cat clear cut echo env expr false find grep head \
+		insmod ls lsmod mkdir mknod mktemp modprobe mount mountpoint pivot_root readlink \
+		realpath reset rmmod sed sh sleep stty switch_root sync tee touch tty umount
 
 	cp /lib/libc.so lib/
 	ln -s libc.so lib/ld-musl-x86_64.so.1
@@ -277,12 +295,6 @@ exit_shell() {
 mount -t proc none /proc
 mount -t sysfs none /sys
 mount -t devtmpfs none /dev
-
-insmod /lib/modules/nls_cp437.ko
-insmod /lib/modules/nls_cp852.ko
-insmod /lib/modules/nls_iso8859-1.ko
-insmod /lib/modules/fat.ko
-insmod /lib/modules/vfat.ko
 
 echo -e "\e[?25l"
 
@@ -333,6 +345,9 @@ check_usage "$1" WANT_HELP
 }
 
 validate_action "$WANT_CREATE" "$WANT_EXTRACT" "$WANT_BUILD"
+
+[ -n "$2" ] && validate_arg "$2" "$1"
+[ -n "$3" ] && validate_arg "$3" "$1"
 
 [ -n "$WANT_CREATE" ] && {
 	[ -n "$4" ] && exiterr "Too many arguments for create: $4"
