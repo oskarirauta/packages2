@@ -1,14 +1,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=splash
-PKG_VERSION:=1.4.2
+PKG_VERSION:=1.4.4
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/oskarirauta/splash.git
-PKG_SOURCE_DATE:=2023-03-10
-PKG_SOURCE_VERSION:=4d5b920380d797ca793fbfeeab911bff2b948e77
-PKG_MIRROR_HASH:=2cf31fbe4970243c11bf64b2099afa56eda4353da39b347d044cfc7c70bd2e7e
+PKG_SOURCE_DATE:=2023-03-12
+PKG_SOURCE_VERSION:=963b9650571a7f3d654879e0266ef7b43e6e4329
+PKG_MIRROR_HASH:=856a44015bd7ff2ad79c2f588f5c4c9ab79db78fa37c91fd67a64d3903597190
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
@@ -28,10 +28,23 @@ define Package/splash/description
   Splash is a graphical term for representation of boot process.
 endef
 
+define Package/splash/config
+  source "$(SOURCE)/Config.in"
+endef
+
 define Build/Configure
 endef
 
-MAKE_VARS += LIBS="$(STAGING_DIR)/usr/lib/libfreetype.a $(STAGING_DIR)/usr/lib/libjpeg.a $(STAGING_DIR)/usr/lib/libpng16.a $(STAGING_DIR)/usr/lib/libz.a"
+MAKE_VARS += \
+	DISTRIBUTION="openwrt" \
+	WITH_JPEG=$(if $(CONFIG_SPLASH_JPG),1,0) \
+	WITH_BMP=$(if $(CONFIG_SPLASH_BMP),1,0) \
+	LIBJPEG="-ljpeg" \
+	LIBFREETYPE="$(if $(CONFIG_SPLASH_STATIC_LINK),$(STAGING_DIR)/usr/lib/libfreetype.a,-lfreetype)" \
+	LIBPNG="$(if $(CONFIG_SPLASH_STATIC_LINK),$(STAGING_DIR)/usr/lib/libpng16.a,-lpng)" \
+	LIBZ="$(if $(CONFIG_SPLASH_STATIC_LINK),$(STAGING_DIR)/usr/lib/libz.a,-lz)"
+
+TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include/freetype2 -I$(STAGING_DIR)/usr/include/freetype2/freetype
 
 define Package/splash/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/splash/fonts $(1)/usr/share/splash/images
