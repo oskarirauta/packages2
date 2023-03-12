@@ -70,7 +70,7 @@ endef
 
 define Package/splash-init/install
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/splash $(1)/etc/init.d/
+	$(INSTALL_BIN) ./files/splash.init $(1)/etc/init.d/splash
 endef
 
 $(eval $(call BuildPackage,splash))
