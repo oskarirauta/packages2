@@ -61,8 +61,7 @@ define Package/splash/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/splash/fonts $(1)/usr/share/splash/images
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/splash $(1)/usr/bin/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/res/fonts/** $(1)/usr/share/splash/fonts/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/res/images/** $(1)/usr/share/splash/images/
-	$(INSTALL_DATA) ./files/openwrt.png $(1)/usr/share/splash/images/
+	$(INSTALL_DATA) ./files/openwrt.png $(1)/usr/share/splash/images/splash.png
 
 	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
 		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
