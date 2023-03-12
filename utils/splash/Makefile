@@ -32,7 +32,7 @@ define Package/splash-init
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Boot splash initscript
-  DEPENDS:=splash @BUSYBOX_CONFIG_CHVT
+  DEPENDS:=splash
 endef
 
 define Package/splash-init/description
