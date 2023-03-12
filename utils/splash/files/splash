@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2013-2014 OpenWrt.org
+
+START=99
+STOP=5
+
+boot() {
+	/usr/bin/splash --image=openwrt --console --reset
+	/usr/bin/splash --message="System ready" --xpoint=-12 -y750 --properties="fontcolor=#ffffff,fontsize=60,fontfile=regular"
+	/usr/bin/splash --exit=5
+	echo -e '\033[?25h' > /dev/tty1
+}
+
+shutdown() {
+	chvt 1
+	echo -e '\033[?25l' > /dev/tty1
+	/usr/bin/splash --image=openwrt --reset
+	/usr/bin/splash --message="Shutting down" --xpoint=-12 -y750 --properties="fontcolor=#ffffff,fontsize=60,fontfile=regular"
+}

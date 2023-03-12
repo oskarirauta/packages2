@@ -12,6 +12,7 @@ PKG_MIRROR_HASH:=856a44015bd7ff2ad79c2f588f5c4c9ab79db78fa37c91fd67a64d390359719
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
+PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_BUILD_DEPENDS:=freetype libpng libjpeg-turbo zlib
 
 include $(INCLUDE_DIR)/package.mk
@@ -21,11 +22,21 @@ define Package/splash
   CATEGORY:=Utilities
   TITLE:=Boot splash
   DEPENDS:=
-  MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 endef
 
 define Package/splash/description
   Splash is a graphical term for representation of boot process.
+endef
+
+define Package/splash-init
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=Boot splash initscript
+  DEPENDS:=splash @BUSYBOX_CONFIG_CHVT
+endef
+
+define Package/splash-init/description
+  Init script to display openwrt splash on boot and shutdown
 endef
 
 define Package/splash/config
@@ -57,4 +68,10 @@ define Package/splash/install
 		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
 endef
 
+define Package/splash-init/install
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/splash $(1)/etc/init.d/
+endef
+
 $(eval $(call BuildPackage,splash))
+$(eval $(call BuildPackage,splash-init))
