@@ -13,7 +13,7 @@ PKG_MIRROR_HASH:=856a44015bd7ff2ad79c2f588f5c4c9ab79db78fa37c91fd67a64d390359719
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
-PKG_BUILD_DEPENDS:=freetype libpng libjpeg-turbo zlib
+PKG_BUILD_DEPENDS:=SPLASH_STATIC_LINK:libpng SPLASH_STATIC_LINK:freetype SPLASH_STATIC_LINK:zlib
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -21,7 +21,7 @@ define Package/splash
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Boot splash
-  DEPENDS:=
+  DEPENDS:=+(SPLASH_JPG):libjpeg-turbo +(!SPLASH_STATIC_LINK):libpng +(!SPLASH_STATIC_LINK):libfreetype +(!SPLASH_STATIC_LINK):zlib
 endef
 
 define Package/splash/description
