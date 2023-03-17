@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=buildroot-env
-PKG_VERSION:=20230308
+PKG_VERSION:=20230317
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
@@ -52,11 +52,12 @@ define Build/Install
 endef
 
 define Package/buildroot-env/install
-	$(INSTALL_DIR) $(1)/usr/include
+	$(INSTALL_DIR) $(1)/usr/include $(1)/usr/lib
 	$(INSTALL_DATA) $(STAGING_DIR)/usr/include/argp.h $(1)/usr/include/
 	$(INSTALL_DATA) $(STAGING_DIR)/usr/include/fts.h $(1)/usr/include/
 	$(INSTALL_DATA) $(STAGING_DIR)/usr/include/obstack.h $(1)/usr/include/
 	$(INSTALL_DATA) $(STAGING_DIR)/usr/include/{zdict.h,zstd.h,zstd_errors.h} $(1)/usr/include/
+	ln -s libncursesw.so.6.4 $(1)/usr/lib/libncurses.so
 endef
 
 $(eval $(call BuildPackage,buildroot-env))
