@@ -58,6 +58,7 @@ define Package/buildroot-env/install
 	$(INSTALL_DATA) $(STAGING_DIR)/usr/include/obstack.h $(1)/usr/include/
 	$(INSTALL_DATA) $(STAGING_DIR)/usr/include/{zdict.h,zstd.h,zstd_errors.h} $(1)/usr/include/
 	ln -s libncursesw.so.6.4 $(1)/usr/lib/libncurses.so
+	ln -s libncursesw.a $(1)/usr/lib/libncurses.a
 endef
 
 $(eval $(call BuildPackage,buildroot-env))
