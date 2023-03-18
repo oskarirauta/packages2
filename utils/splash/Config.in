@@ -1,0 +1,18 @@
+menu "Configuration"
+	depends on PACKAGE_splash
+
+config SPLASH_JPG
+	bool "enable support for jpeg image format"
+	default n
+
+config SPLASH_BMP
+	bool "enable support for bmp image format"
+	default n
+
+config SPLASH_STATIC_LINK
+	bool "link libraries statically"
+	help
+		jpeg library is exception, openwrt does not build static archive for it
+	default n
+
+endmenu
