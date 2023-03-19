@@ -29,7 +29,7 @@ endef
 
 define Package/rev/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(find $(BUILD_DIR)/util-linux-* -wholename \*ipkg-install/usr/bin/rev) $(1)/usr/bin/
+	$(INSTALL_BIN) `find $(BUILD_DIR)/util-linux-* -wholename \*ipkg-install/usr/bin/rev` $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,rev))
