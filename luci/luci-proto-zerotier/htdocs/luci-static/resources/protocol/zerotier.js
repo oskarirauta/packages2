@@ -40,17 +40,20 @@ return network.registerProtocol('zerotier', {
 		var o;
 
 		o = s.taboption('general', form.Value, 'network_id', _('Network id'), _('Required. Network id where to join.'));
-		o.optional = false
-		o.rmempty = false
+		o.optional = false;
+		o.rmempty = false;
 		o = s.taboption('general', form.Value, 'secret', _('Secret'), _('Your network identifier.'));
-		o.optional = true
+		o.optional = true;
 		o = s.taboption('general', form.Value, 'port', _('Port'), _('Port for UDP and TCP/HTTP (default: 9993, leave empty for random)'));
-		o.optional = true
+		o.optional = true;
 		o = s.taboption('general', form.Value, 'config_path', _('Config path'), _('Path to your prepared connection configuration.'));
-		o.optional = true
+		o.optional = true;
 		o = s.taboption('general', form.Flag, 'copy_config_path', _('Copy config files'), _('Instead of linking to configuration path, copy it'));
                 o.default = o.disabled;
-		o.optional = true
+		o.optional = true;
+		o = s.taboption('general', form.Value, 'delay', _('Delay'), _('Delay before initiating connection (default: 0)'));
+		o.optional = true;
+		o.rmempty = true;
 	},
 
 	deleteConfiguration: function () {
