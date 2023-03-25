@@ -22,7 +22,7 @@ define Package/buildroot-env
 		+coreutils-nproc +coreutils-od +coreutils-mkdir +coreutils-date +coreutils-comm +coreutils-printf \
 		+coreutils-ln +coreutils-cp +coreutils-split +coreutils-csplit +coreutils-cksum +coreutils-expr \
 		+coreutils-tr +coreutils-test +coreutils-uniq +coreutils-fmt +rev \
-		+libncurses-dev +zlib-dev +xz-utils +tar +ldconfig-script \
+		+libncurses-dev +zlib-dev +xz-utils +tar +ldconfig-script +pax-utils \
 		+bash +quilt +htop +whereis +less +file +findutils +findutils-locate +chattr +lsattr +xxd \
 		+perlbase-ipc +perlbase-module +perlbase-extutils \
 		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype \
