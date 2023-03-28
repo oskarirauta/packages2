@@ -13,7 +13,6 @@ define Package/buildroot-env
   CATEGORY:=Development
   TITLE:=Openwrt buildroot environment
   DEPENDS:= \
-		@NO_STRIP \
 		+libuargp +musl-fts +musl-obstack +libzstd +libc-stubs +libstdcpp \
 		+pkg-config +make +gcc +diffutils +autoconf +automake +check +git +git-http +patch +libtool-bin \
 		+grep +rsync +tar +python3 +getopt +procps-ng-ps +gawk +sed +xz +unzip +gzip +bzip2 +flock +wget-ssl \
