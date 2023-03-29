@@ -48,8 +48,6 @@ define Package/cmake/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cmake/Modules/** $(1)/usr/lib/cmake/Modules/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cmake/Templates/** $(1)/usr/lib/cmake/Templates/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/cmake/include/** $(1)/usr/lib/cmake/include/
-	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
-		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,cmake))

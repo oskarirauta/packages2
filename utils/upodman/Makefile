@@ -41,8 +41,6 @@ define Package/upodman/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/upodman $(1)/usr/bin/
 	$(INSTALL_BIN) ./files/upodman.init $(1)/etc/init.d/upodman
-	[ "$(CONFIG_NO_STRIP)" = "y" ] && \
-		STRIP=$(STAGING_DIR_HOST)/bin/sstrip $(SCRIPT_DIR)/rstrip.sh $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,upodman))
