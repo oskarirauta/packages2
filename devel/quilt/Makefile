@@ -66,6 +66,7 @@ define Package/quilt/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/guards $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/quilt $(1)/usr/bin/
 	$(CP) -aR $(PKG_INSTALL_DIR)/usr/share/quilt/** $(1)/usr/share/quilt/
+	chmod 644 $(1)/etc/quilt.quiltrc
 endef
 
 $(eval $(call BuildPackage,quilt))
