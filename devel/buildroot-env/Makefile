@@ -27,7 +27,7 @@ define Package/buildroot-env
 		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype \
 		+perlbase-open +perlbase-if +perlbase-digest \
 		+perlbase-autouse +perlbase-sys +perlbase-sort \
-		+perlbase-diagnostics +python3-lib2to3 +coreutils-join
+		+perlbase-diagnostics +python3-lib2to3 +coreutils-join +re2
 endef
 
 define Package/buildroot-env/description
