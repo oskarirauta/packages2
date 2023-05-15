@@ -4,9 +4,11 @@ PKG_NAME:=upodman
 PKG_VERSION:=0.98.2
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/oskarirauta/upodman/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=4662f233f2c2e0400981299d09086e36d64ffec541233923e019702d378ff418
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/oskarirauta/upodman.git
+PKG_SOURCE_DATE:=2023-05-15
+PKG_SOURCE_VERSION:=175aaee4af2737de048490bb6428bd511a884374
+PKG_MIRROR_HASH:=skip
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
