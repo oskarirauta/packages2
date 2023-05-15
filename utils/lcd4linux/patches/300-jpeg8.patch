@@ -8,7 +8,7 @@
  
  #include "debug.h"
  #include "cfg.h"
-@@ -117,6 +118,287 @@ static struct {
+@@ -225,6 +226,287 @@ static struct
  /***  hardware dependant functions    ***/
  /****************************************/
  

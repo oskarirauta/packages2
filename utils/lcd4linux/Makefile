@@ -187,9 +187,14 @@ $(call Package/lcd4linux/Default/description)
  drivers and plugins.
 endef
 
+CONFIGURE_VARS+= \
+	ANSICXX_TRUE=yes \
+	am__fastdepCXX_TRUE=yes \
+	gl_CXX_CHOICE=yes
 
 CONFIGURE_ARGS+= \
-	--disable-rpath
+	--disable-rpath \
+	--enable-c++
 
 TARGET_CFLAGS += -std=gnu89
 
@@ -257,7 +262,6 @@ ifeq ($(BUILD_VARIANT),full)
   EXTRA_LDFLAGS+= -L$(STAGING_DIR)/usr/lib/mysql
 
 endif
-
 
 define Package/lcd4linux/conffiles
 /etc/lcd4linux.conf
