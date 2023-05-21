@@ -28,12 +28,15 @@ define Package/buildroot-env
 		+perlbase-open +perlbase-if +perlbase-digest \
 		+perlbase-autouse +perlbase-sys +perlbase-sort \
 		+perlbase-diagnostics +python3-lib2to3 +coreutils-join \
-		+re2 +PERL_TESTS
+		+re2
 endef
 
 define Package/buildroot-env/description
   Provides environment suitable to build openwrt on openwrt with
   depencies and necessary missing header files.
+
+  You also will need some pod files. To include them, make sure you
+  have selected to include Perl tests in perl's configuration.
 
   Requires unstripped build. Further documentation is available at
   https://openwrt.org/docs/guide-developer/toolchain/building_openwrt_on_openwrt
