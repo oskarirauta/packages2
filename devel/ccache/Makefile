@@ -21,7 +21,7 @@ define Package/ccache
   CATEGORY:=Development
   TITLE:=ccache
   URL:=https://github.com/ccache/ccache
-  DEPENDS:=
+  DEPENDS:=+libstdcpp +libzstd
 endef
 
 define Package/ccache/description
