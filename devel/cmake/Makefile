@@ -28,6 +28,8 @@ define Package/cmake/description
   tools designed to build, test and package software.
 endef
 
+PKG_SHORT_VERSION:=3.27
+
 define Build/Configure
 	# Nothing to configure
 endef
@@ -41,13 +43,13 @@ define Build/Install
 endef
 
 define Package/cmake/install
-	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/aclocal $(1)/usr/share/cmake-$(PKG_VERSION)
-	$(INSTALL_DIR) $(1)/usr/lib/cmake-$(PKG_VERSION)/{Help,Modules,Templates,include}
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/aclocal $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)
+	$(INSTALL_DIR) $(1)/usr/lib/cmake-$(PKG_SHORT_VERSION)/{Help,Modules,Templates,include}
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/** $(1)/usr/bin/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/Help/** $(1)/usr/share/cmake-$(PKG_VERSION)/Help/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/Modules/** $(1)/usr/share/cmake-$(PKG_VERSION)/Modules/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/Templates/** $(1)/usr/share/cmake-$(PKG_VERSION)/Templates/
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/include/** $(1)/usr/share/cmake-$(PKG_VERSION)/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_SHORT_VERSION)/Help/** $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/Help/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_SHORT_VERSION)/Modules/** $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/Modules/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_SHORT_VERSION)/Templates/** $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/Templates/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_SHORT_VERSION)/include/** $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/include/
 endef
 
 $(eval $(call BuildPackage,cmake))
