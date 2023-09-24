@@ -44,7 +44,7 @@ endef
 
 define Package/cmake/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/aclocal $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)
-	$(INSTALL_DIR) $(1)/usr/lib/cmake-$(PKG_SHORT_VERSION)/{Help,Modules,Templates,include}
+	$(INSTALL_DIR) $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/{Help,Modules,Templates,include}
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/** $(1)/usr/bin/
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_SHORT_VERSION)/Help/** $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/Help/
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_SHORT_VERSION)/Modules/** $(1)/usr/share/cmake-$(PKG_SHORT_VERSION)/Modules/
