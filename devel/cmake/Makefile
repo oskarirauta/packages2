@@ -3,11 +3,11 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cmake
 PKG_VERSION:=3.27.4
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-x86_64-precompiled.tar.xz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/owrt-packages2/raw/main/devel/cmake/files
-PKG_HASH:=4a8a367459daa72dfd6cceabf0f6c8d2ddee25fc1f85812425a34fac73bbf746
+PKG_HASH:=b96edcd26287dfab62ea3851ebe4ad8daa48f60be27f83cc2c79cd8c6eb0e281
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later
