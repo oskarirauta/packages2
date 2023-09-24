@@ -2,16 +2,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cmake
-PKG_VERSION:=3.20.0
+PKG_VERSION:=3.27.4
 PKG_RELEASE:=$(AUTORELEASE)
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-x86_64-precompiled.tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-x86_64-precompiled.tar.xz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/owrt-packages2/raw/main/devel/cmake/files
-PKG_HASH:=c596094a439cc28e595e89276fd6d77e268d815cb921abf99ab1bbdeb7a54663
+PKG_HASH:=4a8a367459daa72dfd6cceabf0f6c8d2ddee25fc1f85812425a34fac73bbf746
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later
-PKG_LICENSE_FILES:= Copyright.txt LGPLv2.1.txt LGPLv3.txt
+PKG_LICENSE_FILES:= Copyright.txt Licenses/LGPLv2.1.txt Licenses/LGPLv3.txt
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -41,13 +41,13 @@ define Build/Install
 endef
 
 define Package/cmake/install
-	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib/cmake
-	$(INSTALL_DIR) $(1)/usr/lib/cmake/{Help,Modules,Templates,include}
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/aclocal $(1)/usr/share/cmake-$(PKG_VERSION)
+	$(INSTALL_DIR) $(1)/usr/lib/cmake-$(PKG_VERSION)/{Help,Modules,Templates,include}
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/** $(1)/usr/bin/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cmake/Help/** $(1)/usr/lib/cmake/Help/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cmake/Modules/** $(1)/usr/lib/cmake/Modules/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cmake/Templates/** $(1)/usr/lib/cmake/Templates/
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/cmake/include/** $(1)/usr/lib/cmake/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/Help/** $(1)/usr/share/cmake-$(PKG_VERSION)/Help/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/Modules/** $(1)/usr/share/cmake-$(PKG_VERSION)/Modules/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/Templates/** $(1)/usr/share/cmake-$(PKG_VERSION)/Templates/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION)/include/** $(1)/usr/share/cmake-$(PKG_VERSION)/include/
 endef
 
 $(eval $(call BuildPackage,cmake))
