@@ -34,7 +34,7 @@ endef
 
 define Package/meson/install
 	$(INSTALL_DIR) $(1)/bin
-	$(BUILD_DIR_BASE)/host/$(PKG_NAME)-$(PKG_VERSION)/packaging/create_zipapp.py $(PKG_BUILD_DIR) --outfile $(1)/bin/meson.py
+	$(STAGING_DIR_HOST)/bin/$(PYTHON) $(PKG_BUILD_DIR)/packaging/create_zipapp.py $(PKG_BUILD_DIR) --outfile $(1)/bin/meson.py
 	$(INSTALL_DIR) $(1)/lib/meson
 	$(INSTALL_CONF) files/openwrt-cross.txt.in $(1)/lib/meson/
 	$(INSTALL_CONF) files/openwrt-native.txt.in $(1)/lib/meson/
