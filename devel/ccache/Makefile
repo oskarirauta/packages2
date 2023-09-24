@@ -36,7 +36,7 @@ CMAKE_OPTIONS += \
 
 define Package/ccache/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/ccache $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/ccache $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,ccache))
