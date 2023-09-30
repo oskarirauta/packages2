@@ -1,0 +1,10 @@
+menu "Configuration"
+	depends on PACKAGE_openwrt-banner
+
+config OPENWRT_BANNER_RELEASE
+	string "Hardcode custom release version"
+	default ""
+	help
+	  Forces customized release version
+
+endmenu
