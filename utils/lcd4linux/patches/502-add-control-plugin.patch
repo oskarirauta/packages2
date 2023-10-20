@@ -1,0 +1,965 @@
+From 882b6876e8e0c94a3745ca45489a6ed35a67eb60 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:39:34 +0200
+Subject: [PATCH] plugin: add control plugin
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ plugin_control.c | 951 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 951 insertions(+)
+ create mode 100644 plugin_control.c
+
+--- /dev/null
++++ b/plugin_control.c
+@@ -0,0 +1,951 @@
++/* $Id$
++ * $URL$
++ *
++ * This plugin enables external controls (in/out).
++ * 
++ * https://lcd4linux.bulix.org/wiki/plugin_control
++ *
++ * Copyright (C) 2003 Michael Reinelt <michael@reinelt.co.at>
++ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The LCD4Linux Team <lcd4linux-devel@users.sourceforge.net>
++ * Copyright (C) 2015 Marcus Menzel <codingmax@gmx-topmail.de>
++ *
++ * This file is part of LCD4Linux.
++ *
++ * LCD4Linux is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * LCD4Linux is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++
++
++#include "config.h"
++
++/* these should always be included */
++#include "debug.h"
++#include "plugin.h"
++#include "cfg.h"
++#include "property.h"
++#include "timer.h"
++
++
++/* define the include files you need */
++#include <stdlib.h>
++#include <stdio.h>
++#include <string.h>
++#include <ctype.h>
++#include <unistd.h>
++#include <sys/wait.h>
++#include <fcntl.h>
++#include <errno.h>
++#include <syslog.h>
++
++
++#ifdef WITH_DMALLOC
++#include <dmalloc.h>
++#endif
++
++
++#define SECTION "Plugin:Control"
++#define PLUGIN "Control"
++#define my_debug(args...) message (2, __FILE__ ": " args)
++#define my_info(args...)  message (1, "Info  Plugin '" PLUGIN "': " args)
++#define my_error(args...) message (0, "ERROR Plugin '" PLUGIN "': " args)
++#define my_noMemory() message (0, "ERROR Couldn't allocate new memory (%s:%d).",PLUGIN, __LINE__)
++
++#define MAX_CONTROLLERS 256
++#define DEFAULT_UPDATE 100
++#define MAX_EXEC_ARGS 100
++#define MAX_READS_PER_POLL 100
++#define LEN_STDERR_BUF 256
++
++#define ERROR_DUP 2
++#define ERROR_EXEC 3
++
++typedef struct Key Key;
++
++typedef struct Key {
++    unsigned char value;
++    char *name;
++    PROPERTY *action;
++    Key *next;
++} Key;
++
++typedef struct Controller {
++    char *name;
++    PROPERTY *defaultAction;
++    PROPERTY *anybyteAction;
++    int update;
++
++    Key *firstKey;
++
++    char **execArray;
++
++    int fdPoll;
++    int fdSend;
++    int isActive;
++    int lastByte;
++
++    pid_t pid;
++
++} Controller;
++
++typedef struct Plugin {
++    Controller **controllers;
++    int controllerNb;
++} Plugin;
++
++static Plugin *plugin = NULL;
++
++
++static void my_eval(PROPERTY * prop)
++{
++    if (prop != NULL)
++	property_eval(prop);
++}
++
++
++static void my_waitpid(Controller * ctrl)
++{
++    int status;
++
++    if (waitpid(ctrl->pid, &status, WNOHANG) == ctrl->pid) {
++	if (WIFEXITED(status)) {
++
++	    if (WEXITSTATUS(status) == 0) {
++		my_error("Controller '%s' terminated with exit code 0.", ctrl->name);
++	    } else {
++		int exitValue = WEXITSTATUS(status);
++		my_error("Controller '%s' terminated with exit code %d.", ctrl->name, exitValue);
++	    }
++	} else {
++	    my_error("Controller '%s' did not terminate normally.", ctrl->name);
++	}
++	ctrl->pid = -1;
++    }
++
++}
++
++static void my_handle_byte(Controller * ctrl, unsigned char byteVal)
++{
++
++    if (!ctrl->isActive)
++	return;
++
++    ctrl->lastByte = byteVal;
++
++    my_eval(ctrl->anybyteAction);
++
++    Key *key;
++    for (key = ctrl->firstKey; key != NULL; key = key->next)
++	if (key->value == byteVal) {
++	    my_eval(key->action);
++	    break;
++	}
++
++    if (key == NULL)
++	my_eval(ctrl->defaultAction);
++
++}
++
++
++
++static void my_waitpid_and_poll_callback(void *vCtrl)
++{
++
++    if (vCtrl == NULL) {
++	my_error("my_waitpid_and_poll_callback(): Argument == NULL. This shouldn't happen.");
++	return;
++    }
++
++    Controller *ctrl = (Controller *) vCtrl;
++
++
++    if (ctrl->pid < 0 && ctrl->fdPoll < 0) {
++	if (timer_remove(my_waitpid_and_poll_callback, vCtrl) == 0)
++	    my_info("Timer of controller '%s' removed.", ctrl->name);
++    }
++
++    if (ctrl->pid >= 0)
++	my_waitpid(ctrl);
++
++
++    if (ctrl->fdPoll > 0) {
++
++	unsigned char val;
++
++	int i;
++	for (i = 0; i < MAX_READS_PER_POLL; i++) {
++
++	    if (read(ctrl->fdPoll, &val, 1) != 1)
++		break;
++
++	    if (i == MAX_READS_PER_POLL - 1) {
++		my_error("Read %d bytes from controller '%s' at once.", MAX_READS_PER_POLL, ctrl->name);
++		my_error("This controller seems to write more than processible.");
++	    }
++
++	    my_info("Received from Controller '%s': %3d (0x%02x) '%c'", ctrl->name, val, val, val);
++	    my_handle_byte(ctrl, val);
++	}
++
++    }
++
++
++}
++
++
++static int my_set_nonblocking(int fd)
++{
++    int flags = fcntl(fd, F_GETFL, 0);
++    if (flags == -1)
++	return 0;
++    flags |= O_NONBLOCK;
++    return fcntl(fd, F_SETFL, flags) < 0 ? 0 : 1;
++}
++
++
++static int my_start_controller(Controller * ctrl)
++{
++
++    if (ctrl->defaultAction != NULL)
++	Compile(ctrl->defaultAction->expression, &ctrl->defaultAction->compiled);
++    if (ctrl->anybyteAction != NULL)
++	Compile(ctrl->anybyteAction->expression, &ctrl->anybyteAction->compiled);
++
++    Key *key;
++    for (key = ctrl->firstKey; key != NULL; key = key->next) {
++	Compile(key->action->expression, &key->action->compiled);
++    }
++
++
++    if (ctrl->execArray != NULL) {
++	int stdinCtrl[2];
++	int stdoutCtrl[2];
++	pipe(stdinCtrl);
++	pipe(stdoutCtrl);
++
++	int errorPipes[2];
++	pipe(errorPipes);
++	if (fcntl(errorPipes[1], F_SETFD, FD_CLOEXEC) == -1) {
++	    my_error("Can't set error pipe to close on exec.");
++	    return -1;
++
++	}
++
++	pid_t pidCtrl = fork();
++
++	if (pidCtrl < 0) {
++	    my_error("Cant't start controller '%s'. First fork failed.", ctrl->name);
++	    return -1;
++	}
++
++	/* child */
++	if (pidCtrl == 0) {
++
++	    close(errorPipes[0]);
++
++	    if (dup2(stdinCtrl[0], STDIN_FILENO) != STDIN_FILENO) {
++		my_error("Couldn't redirect stdin of external controller '%s'.", ctrl->name);
++		char error = ERROR_DUP;
++		write(errorPipes[1], &error, 1);
++		close(errorPipes[1]);
++		_exit(21);
++	    }
++
++	    if (dup2(stdoutCtrl[1], STDOUT_FILENO) != STDOUT_FILENO) {
++		my_error("Couldn't redirect stdout of external controller '%s'.", ctrl->name);
++		char error = ERROR_DUP;
++		write(errorPipes[1], &error, 1);
++		close(errorPipes[1]);
++		_exit(22);
++	    }
++
++	    close(STDERR_FILENO);
++	    close(stdinCtrl[0]);
++	    close(stdinCtrl[1]);
++	    close(stdoutCtrl[0]);
++	    close(stdoutCtrl[1]);
++
++	    execv(*ctrl->execArray, ctrl->execArray + 1);
++
++	    int errsv = errno;
++	    openlog("LCD4Linux", LOG_PID, LOG_USER);
++	    syslog(LOG_ERR, "Fail to execute '%s': %s", *ctrl->execArray, strerror(errsv));
++	    closelog();		/* TODO: Problem with main syslog? */
++
++	    char error = ERROR_EXEC;
++	    write(errorPipes[1], &error, 1);
++	    close(errorPipes[1]);
++
++	    _exit(24);
++	}
++
++	/* parent */
++	if (pidCtrl > 0) {
++
++	    close(errorPipes[1]);
++	    char res;
++	    int nb = read(errorPipes[0], &res, 1);
++	    close(errorPipes[0]);
++	    /*  child failed to dup2 or failed to exec */
++	    if (nb > 0) {
++
++		if (res == ERROR_DUP)
++		    my_error("Error while trying to redirect a standard stream of controller '%s'", ctrl->name);
++		if (res == ERROR_EXEC)
++		    my_error("Couldn't execute controller '%s'. See log file.", ctrl->name);
++
++		return -1;
++	    }
++	    ctrl->pid = pidCtrl;
++
++	    close(stdinCtrl[0]);
++	    close(stdoutCtrl[1]);
++	    ctrl->fdSend = stdinCtrl[1];
++	    ctrl->fdPoll = stdoutCtrl[0];
++	    my_set_nonblocking(ctrl->fdPoll);
++	    my_set_nonblocking(ctrl->fdSend);
++
++	    return timer_add_late(my_waitpid_and_poll_callback, ctrl, ctrl->update, 0);
++	}
++    }
++
++    return -1;
++}
++
++
++static void my_start_controller_callback(void *null)
++{
++
++    int c;
++    for (c = 0; c < plugin->controllerNb; c++)
++	my_start_controller(plugin->controllers[c]);
++}
++
++
++static void my_free_property(PROPERTY * prop)
++{
++    if (prop == NULL)
++	return;
++    property_free(prop);
++
++}
++
++static int my_set_property(char *key, PROPERTY ** result)
++{
++
++    char *tmp = cfg_get_raw(SECTION, key, NULL);
++    if (tmp == NULL)
++	return 0;
++
++    PROPERTY *prop = malloc(sizeof(PROPERTY));
++    if (prop == NULL) {
++	my_noMemory();
++	return -1;
++    }
++    prop->valid = 1;
++    prop->expression = tmp;	/* NO strdup see property_free() */
++    prop->compiled = NULL;
++    prop->result.string = NULL;
++    DelResult(&prop->result);
++    prop->name = strdup(key);
++
++    *result = prop;
++    my_info("%s = %s.", key, prop->expression);
++
++    return 0;
++}
++
++
++
++static void my_free_key(Key * key)
++{
++
++    if (key == NULL)
++	return;
++
++    free(key->name);
++    my_free_property(key->action);
++    free(key);
++}
++
++
++static void my_free_controller(Controller * ctrl)
++{
++
++    if (ctrl == NULL)
++	return;
++
++    free(ctrl->name);
++    my_free_property(ctrl->defaultAction);
++    my_free_property(ctrl->anybyteAction);
++
++    Key *k;
++    Key *next;
++    for (k = ctrl->firstKey; k != NULL; k = next) {
++	next = k->next;
++	my_free_key(k);
++    }
++
++    if (ctrl->execArray != NULL) {
++	char **ptr;
++	for (ptr = ctrl->execArray; *ptr != NULL; ptr++) {
++	    free(*ptr);
++	}
++	free(ctrl->execArray);
++    }
++
++    if (ctrl->fdPoll >= 0)
++	close(ctrl->fdPoll);
++    if (ctrl->fdSend >= 0)
++	close(ctrl->fdSend);
++
++    free(ctrl);
++}
++
++static void my_free_plugin()
++{
++
++    if (plugin == NULL)
++	return;
++
++    int pidNb = 0;
++    pid_t pids[plugin->controllerNb];
++
++    int c;
++    for (c = 0; c < plugin->controllerNb; c++) {
++	Controller *ctrl = plugin->controllers[c];
++	timer_remove(my_waitpid_and_poll_callback, ctrl);
++	if (ctrl->pid >= 0) {
++	    kill(ctrl->pid, SIGTERM);
++	    pids[pidNb++] = ctrl->pid;
++	}
++	my_free_controller(ctrl);
++    }
++    free(plugin->controllers);
++    free(plugin);
++    plugin = NULL;
++
++    sleep(1);
++    int i;
++    for (i = 0; i < pidNb; i++)
++	if (waitpid(pids[i], NULL, WNOHANG) != pids[i])
++	    kill(pids[i], SIGKILL);
++}
++
++
++static int my_key_init(int idxC, int valK, Key *** key3Ptr)
++{
++
++    char *section = cfg_make_str("%s.Controller%d.Key%d", SECTION, idxC + 1, valK);
++    if (!cfg_exist(section)) {
++	free(section);
++	return 0;
++    }
++    free(section);
++
++    Key *key = malloc(sizeof(Key));
++    if (key == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    **key3Ptr = key;
++    *key3Ptr = &key->next;
++
++    key->value = valK;
++    key->name = NULL;
++    key->action = NULL;
++    key->next = NULL;
++
++    char *cfgKey = cfg_make_str("Controller%d.Key%d.name", idxC + 1, valK);
++    char *dfltName = cfg_make_str("Key%d", valK);
++    key->name = cfg_get(SECTION, cfgKey, dfltName);
++    free(cfgKey);
++    free(dfltName);
++
++    Key *k;
++    for (k = plugin->controllers[idxC]->firstKey; k != NULL && k != key; k = k->next) {
++
++	if (strcmp(k->name, key->name) == 0) {
++	    my_error("Key name '%s' of controller %d is not unique.", key->name, idxC + 1);
++	    return -1;
++	}
++    }
++
++    cfgKey = cfg_make_str("Controller%d.Key%d.action", idxC + 1, valK);
++    if (my_set_property(cfgKey, &key->action) < 0) {
++	free(cfgKey);
++	return -1;
++    }
++    free(cfgKey);
++
++    return 0;
++}
++
++
++static int my_init_controller(int idxC)
++{
++
++    Controller *ctrl = malloc(sizeof(Controller));
++    if (ctrl == NULL) {
++	my_noMemory();
++	return -1;
++    }
++    plugin->controllers[idxC] = ctrl;
++
++    ctrl->name = NULL;
++    ctrl->defaultAction = NULL;
++    ctrl->anybyteAction = NULL;
++    ctrl->update = DEFAULT_UPDATE;
++    ctrl->firstKey = NULL;
++    ctrl->execArray = NULL;
++    ctrl->fdPoll = -1;
++    ctrl->fdSend = -1;
++    ctrl->isActive = 1;
++    ctrl->lastByte = -1;
++    ctrl->pid = -1;
++
++    int i;
++
++    char *key = cfg_make_str("Controller%d.name", idxC + 1);
++    char *dfltName = cfg_make_str("Controller%d", idxC + 1);
++    char *name = cfg_get(SECTION, key, dfltName);
++    free(key);
++    free(dfltName);
++
++    if (name == NULL || *name == '\0') {
++	my_error("Controller %d has no valide name.", idxC + 1);
++	free(name);
++	return -1;
++    }
++    for (i = 0; i < idxC; i++) {
++	if (strcmp(plugin->controllers[i]->name, name) == 0) {
++	    my_error("Controller name '%s' is not unique.", name);
++	    free(name);
++	    return -1;
++	}
++    }
++    ctrl->name = name;
++    my_info("Controller%d.name = '%s'.", idxC + 1, name);
++
++
++    key = cfg_make_str("Controller%d.anybyte", idxC + 1);
++    if (my_set_property(key, &ctrl->anybyteAction) < 0) {
++	free(key);
++	return -1;
++    }
++    free(key);
++
++    key = cfg_make_str("Controller%d.default", idxC + 1);
++    if (my_set_property(key, &ctrl->defaultAction) < 0) {
++	free(key);
++	return -1;
++    }
++    free(key);
++
++    key = cfg_make_str("Controller%d.update", idxC + 1);
++    if (cfg_number(SECTION, key, DEFAULT_UPDATE, 10, 1000, &ctrl->update) < 0) {
++	free(key);
++	my_error("Controller '%s' has no valide update value.", name);
++	return -1;
++    }
++    free(key);
++
++    key = cfg_make_str("Controller%d.prog", idxC + 1);
++    char *prog = cfg_get(SECTION, key, NULL);
++    free(key);
++
++    if (prog != NULL && *prog == '\0') {
++	free(prog);
++	prog = NULL;
++    }
++
++    if (prog != NULL) {
++
++	int argNb = 0;
++	for (i = 0; i < MAX_EXEC_ARGS; i++) {
++	    char *key = cfg_make_str("Controller%d.arg%d", idxC + 1, i + 1);
++	    char *arg = cfg_get(SECTION, key, NULL);
++	    free(key);
++	    if (arg != NULL)
++		argNb++;
++	    free(arg);
++	}
++
++	ctrl->execArray = malloc((argNb + 3) * sizeof(char *));
++	ctrl->execArray[0] = prog;
++	ctrl->execArray[1] = strdup(prog);	/* avoid double free */
++	ctrl->execArray[argNb + 2] = NULL;
++	for (i = 0; i < argNb; i++) {
++	    char *key = cfg_make_str("Controller%d.arg%d", idxC + 1, i + 1);
++	    ctrl->execArray[i + 2] = cfg_get(SECTION, key, NULL);
++	    free(key);
++	}
++    }
++
++    Key **key2Ptr = &ctrl->firstKey;
++    for (i = 0; i < 256; i++) {
++	if (my_key_init(idxC, i, &key2Ptr) < -1) {
++	    my_error("Can't init key #%d of controller '%s'.", i, ctrl->name);
++	    return -1;
++	}
++    }
++
++    return 0;
++}
++
++
++static int my_init_plugin()
++{
++
++    int active = 0;
++    if (cfg_number(SECTION, "active", 0, 0, 1, &active) != 1) {
++	my_error("No valide 'active' value. Set to inactive.");
++	return -1;
++    }
++
++    if (!active) {
++	my_info("Set inactive.");
++	return 1;
++    } else
++	my_info("Try to init.");
++
++
++    plugin = malloc(sizeof(Plugin));
++
++    if (plugin == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    plugin->controllers = NULL;
++    plugin->controllerNb = 0;
++
++    int c;
++
++    plugin->controllerNb = cfg_count("Plugin:Control.Controller", MAX_CONTROLLERS);
++
++    if (plugin->controllerNb <= 0) {
++	plugin->controllerNb = 0;
++	my_error("No controllers found.");
++	return -1;
++    } else
++	my_info("%d controllers found.", plugin->controllerNb);
++
++    plugin->controllers = malloc(plugin->controllerNb * sizeof(Controller *));
++
++    if (plugin->controllers == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    for (c = 0; c < plugin->controllerNb; c++)
++	plugin->controllers[c] = NULL;
++
++    for (c = 0; c < plugin->controllerNb; c++)
++	if (my_init_controller(c) < 0)
++	    return -1;
++
++    return timer_add_late(my_start_controller_callback, NULL, 0, 1);
++}
++
++
++static void my_init()
++{
++
++    int status = my_init_plugin();
++    if (status != 0) {
++	if (status < 0) {
++	    my_error("Error while initializing plugin.");
++	    my_error("Plugin will NOT work. Every call will return -1 (error).");
++	}
++	my_free_plugin();
++    }
++}
++
++
++
++static Controller *my_get_ctrl(RESULT * rCtrl)
++{
++
++    if (rCtrl == NULL)
++	return NULL;
++
++
++    if (rCtrl->type & R_NUMBER) {
++	double nb = rCtrl->number;
++	int idx = (int) nb;
++
++	if (idx != nb || idx < 0 || idx >= plugin->controllerNb)
++	    return NULL;
++	else
++	    return plugin->controllers[idx];
++    }
++    if (rCtrl->type & R_STRING) {
++	char *name = rCtrl->string;
++	Controller *ctrl;
++	int c;
++	for (c = 0; c < plugin->controllerNb; c++) {
++	    ctrl = plugin->controllers[c];
++	    if (strcmp(ctrl->name, name) == 0)
++		return ctrl;
++	}
++    }
++    return NULL;
++}
++
++
++static Key *my_get_key(Controller * ctrl, RESULT * rKey)
++{
++
++    if (rKey == NULL)
++	return NULL;
++
++    char *name = NULL;
++    int value = -1;
++
++    if (rKey->type & R_NUMBER) {
++	double nb = rKey->number;
++	value = (unsigned char) nb;
++
++	if (value != nb || value < 0 || value > 255)
++	    return NULL;
++    }
++
++    if (rKey->type & R_STRING)
++	name = R2S(rKey);
++
++    Key *key;
++
++    for (key = ctrl->firstKey; key != NULL; key = key->next) {
++	if (value >= 0 && key->value == value)
++	    return key;
++
++	if (name != NULL && strcmp(key->name, name) == 0)
++	    return key;
++    }
++
++    return NULL;
++}
++
++static int my_plugin_not_active(RESULT ** result)
++{
++
++    static int errorShown = 0;
++    if (plugin == NULL) {
++
++	if (!errorShown) {
++	    errorShown = 1;
++	    my_error("Plugin not active but attempt of using it was detected.");
++	}
++	double error = -1;
++	SetResult(result, R_NUMBER, &error);
++	return 1;
++    }
++    return 0;
++}
++
++
++static void plugin_control_send(RESULT * result, RESULT * rCtrl, RESULT * rByte)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++    SetResult(&result, R_NUMBER, &res);
++
++    Controller *ctrl = my_get_ctrl(rCtrl);
++
++    if (ctrl == NULL) {
++	my_error("send() can't find controller '%s'.", R2S(rCtrl));
++	return;
++    }
++
++    if ((rByte->type & R_NUMBER) == 0 || rByte->number != (unsigned char) rByte->number
++	|| rByte->number < 0 || rByte->number > 255) {
++
++	my_error("Second argument of send() has to be an integer from [0..255].");
++	return;
++    }
++
++    unsigned char byteVal = (unsigned char) rByte->number;
++
++    if (ctrl->fdSend < -1 || write(ctrl->fdSend, &byteVal, 1) != 1) {
++	my_error("send() can't write to controller '%s'.", ctrl->name);
++	return;
++    }
++
++    res = 0;
++    SetResult(&result, R_NUMBER, &res);
++
++}
++
++static void plugin_control_key(RESULT * result, RESULT * rCtrl, RESULT * rKey)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++    SetResult(&result, R_NUMBER, &res);
++
++    Controller *ctrl = my_get_ctrl(rCtrl);
++    if (ctrl == NULL) {
++	my_error("key() can't find controller '%s'.", R2S(rCtrl));
++	return;
++    }
++
++    if (!ctrl->isActive)
++	return;
++
++    Key *key = my_get_key(ctrl, rKey);
++    if (key == NULL) {
++	my_error("key() can't find key '%s' of controller '%s'.", R2S(rKey), R2S(rCtrl));
++	return;
++    }
++
++    ctrl->lastByte = key->value;
++    my_eval(ctrl->anybyteAction);
++    my_eval(key->action);
++
++    res = 0;
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++static void plugin_control_byte(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++    SetResult(&result, R_NUMBER, &res);
++
++    if (argc < 1 || argc > 2) {
++	my_error("byte() requires 1-2 arguments.");
++	return;
++    }
++
++    Controller *ctrl = my_get_ctrl(argv[0]);
++    if (ctrl == NULL) {
++	my_error("byte() can't find controller '%s'.", R2S(argv[0]));
++	return;
++    }
++
++    if (argc == 1) {
++	res = ctrl->lastByte;
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    RESULT *rByte = argv[1];
++
++    if ((rByte->type & R_NUMBER) == 0 || rByte->number != (unsigned char) rByte->number
++	|| rByte->number < 0 || rByte->number > 255) {
++
++	my_error("Second argument of byte() has to be an integer from [0..255].");
++	return;
++    }
++
++    unsigned char byteVal = (unsigned char) rByte->number;
++    my_handle_byte(ctrl, byteVal);
++
++    res = 0;
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++static void plugin_control_running(RESULT * result, RESULT * rCtrl)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++    SetResult(&result, R_NUMBER, &res);
++
++    Controller *ctrl = my_get_ctrl(rCtrl);
++    if (ctrl == NULL) {
++	my_error("running() can't find controller '%s'.", R2S(rCtrl));
++	return;
++    }
++
++    res = ctrl->pid >= 0 ? 1 : 0;
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++static void plugin_control_active(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++    SetResult(&result, R_NUMBER, &res);
++
++    if (argc < 1 || argc > 2) {
++	my_error("active() requires 1-2 arguments.");
++	return;
++    }
++
++    Controller *ctrl = my_get_ctrl(argv[0]);
++    if (ctrl == NULL) {
++	my_error("active() can't find controller '%s'.", R2S(argv[0]));
++	return;
++    }
++
++    if (argc == 1) {
++	res = ctrl->isActive ? 1 : 0;
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    RESULT *rAct = argv[1];
++
++    if ((rAct->type & R_NUMBER) == 0 || rAct->number != (int) rAct->number || rAct->number < 0 || rAct->number > 1) {
++
++	my_error("Second argument of active() has to be an integer from [0..1].");
++	return;
++    }
++
++    ctrl->isActive = (rAct->number == 0) ? 0 : 1;
++
++    res = 0;
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++
++int plugin_init_control(void)
++{
++
++    my_init();
++
++    AddFunction("control::active", -1, plugin_control_active);
++    AddFunction("control::running", 1, plugin_control_running);
++    AddFunction("control::send", 2, plugin_control_send);
++    AddFunction("control::key", 2, plugin_control_key);
++    AddFunction("control::byte", -1, plugin_control_byte);
++
++    return 0;
++}
++
++void plugin_exit_control(void)
++{
++    my_free_plugin();
++}

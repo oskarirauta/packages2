@@ -1,0 +1,67 @@
+From 79fa0fa86387a6b6cb36278e130d86260e93053e Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:14:01 +0200
+Subject: [PATCH] drv_generic_text: add function to clear display
+
+This will be needed for switch layouts.
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ drv_generic_text.c | 38 ++++++++++++++++++++++++++++++++++++++
+ drv_generic_text.h |  2 +-
+ 2 files changed, 39 insertions(+), 1 deletion(-)
+
+--- a/drv_generic_text.c
++++ b/drv_generic_text.c
+@@ -999,3 +999,41 @@ int drv_generic_text_bar_draw(WIDGET * W
+     return 0;
+ 
+ }
++
++void drv_generic_text_clear(int mode)
++{
++
++    static char *backupDisplayFB = NULL;
++
++    /* total clear ==> may flicker */
++    if (mode == 0) {
++	drv_generic_text_bar_clear();
++	memset(LayoutFB, ' ', LROWS * LCOLS);
++	memset(DisplayFB, 'X', DROWS * DCOLS);
++	drv_generic_text_blit(0, 0, LROWS, LCOLS);
++	return;
++    }
++
++    /* part 1 of non-flitter-clear
++     * see my_show_layout() in plugin_layout.c */
++    if (mode == 1) {
++	if (backupDisplayFB == NULL) {
++	    backupDisplayFB = malloc(DROWS * DCOLS * sizeof(char));
++	}
++	memset(LayoutFB, ' ', LROWS * LCOLS);
++	backupDisplayFB = malloc(DROWS * DCOLS * sizeof(char));
++	memcpy(backupDisplayFB, DisplayFB, DROWS * DCOLS);
++	return;
++    }
++
++    /* draw all widget between mode=1 and mode=2 */
++
++    /* part 2 of non-flitter-clear */
++    if (mode == 2) {
++	if (backupDisplayFB != NULL) {
++	    memcpy(DisplayFB, backupDisplayFB, DROWS * DCOLS);
++	    drv_generic_text_blit(0, 0, LROWS, LCOLS);
++	    free(backupDisplayFB);
++	}
++    }
++}
+--- a/drv_generic_text.h
++++ b/drv_generic_text.h
+@@ -52,6 +52,6 @@ int drv_generic_text_bar_init(const int
+ void drv_generic_text_bar_add_segment(const int val1, const int val2, const DIRECTION dir, const int ascii);
+ int drv_generic_text_bar_draw(WIDGET * W);
+ int drv_generic_text_quit(void);
+-
++void drv_generic_text_clear(int mode);
+ 
+ #endif

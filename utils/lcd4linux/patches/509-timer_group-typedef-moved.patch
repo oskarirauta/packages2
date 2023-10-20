@@ -1,0 +1,91 @@
+From 9f9490606847687a8f5add619b2b2a8a99ff52ec Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:00:50 +0200
+Subject: [PATCH] timer_group: typedef moved
+
+Typedef moved to header because type is used in plugin_layout too.
+1 bug fixed.
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ timer_group.c | 28 +---------------------------
+ timer_group.h | 24 ++++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 27 deletions(-)
+
+--- a/timer_group.c
++++ b/timer_group.c
+@@ -92,32 +92,6 @@ int nTimerGroups = 0;
+ /* pointer to memory allocated for storing the timer group slots */
+ TIMER_GROUP *TimerGroups = NULL;
+ 
+-
+-/* structure for storing all relevant timer data of a single widget */
+-typedef struct TIMER_GROUP_WIDGET {
+-    /* pointer to function of type void func(void *data) that will be
+-       called when the timer is processed; it will also be used to
+-       identify a specific widget */
+-    void (*callback) (void *data);
+-
+-    /* pointer to data which will be passed to the callback function;
+-       it will also be used to identify a specific widget */
+-    void *data;
+-
+-    /* specifies the timer's triggering interval in milliseconds; it
+-       will also be used to identify a specific widget */
+-    int interval;
+-
+-    /* specifies whether the timer should trigger indefinitely until
+-       it is deleted (value of 0) or only once (all other values) */
+-    int one_shot;
+-
+-    /* marks timer as being active (so it will get processed) or
+-       inactive (which means the timer has been deleted and its
+-       allocated memory may be re-used) */
+-    int active;
+-} TIMER_GROUP_WIDGET;
+-
+ /* number of allocated widget slots */
+ int nTimerGroupWidgets = 0;
+ 
+@@ -269,7 +243,7 @@ int timer_remove_group(const int interva
+ 	    TimerGroups[group].active = TIMER_INACTIVE;
+ 
+ 	    /* remove the generic timer that calls this group */
+-	    if (timer_remove(timer_process_group, &TimerGroups[group].interval)) {
++	    if (timer_remove(timer_process_group, TimerGroups[group].interval) == 0) {
+ 		/* signal successful removal of timer group */
+ 		return 0;
+ 	    } else {
+--- a/timer_group.h
++++ b/timer_group.h
+@@ -29,6 +29,30 @@
+ #ifndef _TIMER_GROUP_H_
+ #define _TIMER_GROUP_H_
+ 
++/* structure for storing all relevant timer data of a single widget */
++typedef struct TIMER_GROUP_WIDGET {
++    /* pointer to function of type void func(void *data) that will be
++       called when the timer is processed; it will also be used to
++       identify a specific widget */
++    void (*callback) (void *data);
++
++    /* pointer to data which will be passed to the callback function;
++       it will also be used to identify a specific widget */
++    void *data;
++
++    /* specifies the timer's triggering interval in milliseconds; it
++       will also be used to identify a specific widget */
++    int interval;
++
++    /* specifies whether the timer should trigger indefinitely until
++       it is deleted (value of 0) or only once (all other values) */
++    int one_shot;
++
++    /* marks timer as being active (so it will get processed) or
++       inactive (which means the timer has been deleted and its
++       allocated memory may be re-used) */
++    int active;
++} TIMER_GROUP_WIDGET;
+ 
+ void timer_process_group(void *data);
+ 

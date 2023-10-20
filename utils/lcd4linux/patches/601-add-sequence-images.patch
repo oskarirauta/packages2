@@ -1,0 +1,82 @@
+From c18de98a0bcb7881bdef7e0ac9c87836ddaa9f0d Mon Sep 17 00:00:00 2001
+From: Korneliusz Osmenda <korneliuszo@gmail.com>
+Date: Fri, 22 Nov 2019 17:41:06 +0100
+Subject: [PATCH] Add sequence images
+
+---
+ widget_image.c | 21 ++++++++++++++++++++-
+ widget_image.h |  2 ++
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+--- a/widget_image.c
++++ b/widget_image.c
+@@ -110,7 +110,18 @@ static void widget_image_render(const ch
+ 			return;
+ 		}
+ 
+-		fd = fopen(file, "rb");
++		if(P2N(&Image->sequence) >=0)
++		{
++			size_t needed = snprintf(NULL, 0, file, Image->seqnum) + 1;
++			char  *buffer = malloc(needed);
++			sprintf(buffer, file, Image->seqnum);
++			fd = fopen(buffer, "rb");
++			free(buffer);
++			Image->seqnum++;
++			if (Image->seqnum > P2N(&Image->sequence))
++				Image->seqnum=0;
++		} else fd = fopen(file, "rb");
++
+ 		if (fd == NULL)
+ 		{
+ 			error("Warning: Image %s: fopen(%s) failed: %s", Name, file, strerror(errno));
+@@ -343,6 +354,7 @@ void widget_image_update(void *Self)
+ 		property_eval(&Image->reload);
+ 		property_eval(&Image->visible);
+ 		property_eval(&Image->inverted);
++		property_eval(&Image->sequence);
+ 		property_eval(&Image->center);
+ 
+ 		/* render image into bitmap */
+@@ -385,6 +397,7 @@ int widget_image_init(WIDGET * Self)
+ 		Image->width = 0;
+ 		Image->height = 0;
+ 		Image->bitmap = NULL;
++		Image->seqnum = 0;
+ 
+ 		/* load properties */
+ 		property_load(section, "file", NULL, &Image->file);
+@@ -395,6 +408,7 @@ int widget_image_init(WIDGET * Self)
+ 		property_load(section, "reload", "0", &Image->reload);
+ 		property_load(section, "visible", "1", &Image->visible);
+ 		property_load(section, "inverted", "0", &Image->inverted);
++		property_load(section, "sequence", "-1", &Image->sequence);
+ 		property_load(section, "center", "0", &Image->center);
+ 
+ 		/* sanity checks */
+@@ -448,6 +462,7 @@ int widget_image_quit(WIDGET * Self)
+ 				property_free(&Image->reload);
+ 				property_free(&Image->visible);
+ 				property_free(&Image->inverted);
++				property_free(&Image->sequence);
+ 				property_free(&Image->center);
+ 				free(Self->data);
+ 				Self->data = NULL;
+--- a/widget_image.h
++++ b/widget_image.h
+@@ -38,6 +38,7 @@ typedef struct WIDGET_IMAGE
+ 	RGBA *bitmap;			/* image bitmap */
+ 	int width, height;		/* size of the image */
+ 	int oldheight;			/* height of the image before */
++	int seqnum;
+ 	PROPERTY file;			/* image filename */
+ 	PROPERTY scale;			/* scale image in percent */
+ 	PROPERTY _width;		/* scale image to witdh */
+@@ -46,6 +47,7 @@ typedef struct WIDGET_IMAGE
+ 	PROPERTY reload;		/* reload image on update? */
+ 	PROPERTY visible;		/* image visible? */
+ 	PROPERTY inverted;		/* image inverted? */
++	PROPERTY sequence;		/* image sequence */
+ 	PROPERTY center;		/* image centered? */
+ } WIDGET_IMAGE;
+ 

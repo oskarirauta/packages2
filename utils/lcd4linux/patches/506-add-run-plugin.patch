@@ -1,0 +1,525 @@
+From de58393d46bdc285dee5e0ed4ba966a05ae25503 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:44:03 +0200
+Subject: [PATCH] plugin: add run plugin
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ plugin_run.c | 511 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 511 insertions(+)
+ create mode 100644 plugin_run.c
+
+--- /dev/null
++++ b/plugin_run.c
+@@ -0,0 +1,511 @@
++/* $Id$
++ * $URL$
++ *
++ * This plugin allows to run and (auto-)kill programs.
++ * 
++ * https://lcd4linux.bulix.org/wiki/plugin_run
++ *
++ * Copyright (C) 2003 Michael Reinelt <michael@reinelt.co.at>
++ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The LCD4Linux Team <lcd4linux-devel@users.sourceforge.net>
++ * Copyright (C) 2015 Marcus Menzel <codingmax@gmx-topmail.de>
++ *
++ * This file is part of LCD4Linux.
++ *
++ * LCD4Linux is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * LCD4Linux is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include "config.h"
++
++/* these should always be included */
++#include "debug.h"
++#include "plugin.h"
++#include "timer.h"
++#include "evaluator.h"
++
++#include <stdlib.h>
++#include <string.h>
++#include <limits.h>
++#include <unistd.h>
++#include <sys/wait.h>
++#include <signal.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <syslog.h>
++
++#ifdef WITH_DMALLOC
++#include <dmalloc.h>
++#endif
++
++#define SECTION "Plugin:Run"
++#define PLUGIN "Run"
++#define PROCESS_TIMER_INTERVAL 1000
++
++#define my_debug(args...) message (2, __FILE__ ": " args)
++#define my_info(args...)  message (1, "Info  Plugin '" PLUGIN "': " args)
++#define my_error(args...) message (0, "ERROR Plugin '" PLUGIN "': " args)
++#define my_noMemory() message (0, "ERROR Couldn't allocate new memory (%s:%d).",PLUGIN, __LINE__)
++
++#define ERROR_PGID 1
++#define ERROR_DUP 2
++#define ERROR_EXEC 3
++
++typedef struct Process Process;
++
++typedef struct Process {
++
++    long id;
++    pid_t pid;
++    char *command;
++
++    int hasTimeLimit;
++    long timeLeft;
++
++    int exitValue;
++
++    void *tree;
++
++    Process *prev;
++    Process *next;
++
++} Process;
++
++
++typedef struct ProcessTimerData {
++
++    Process *firstProcess;
++    int processNb;
++
++} ProcessTimerData;
++
++
++ProcessTimerData *processTimerData = NULL;
++
++
++static void my_free_process(Process * process)
++{
++    free(process->command);
++    free(process);
++}
++
++
++static void my_free_processes(Process * firstProcess)
++{
++    Process *p;
++    Process *next;
++
++    for (p = firstProcess; p != NULL; p = next) {
++	next = p->next;
++	my_free_process(p);
++    }
++}
++
++
++static void my_free_processTimerData()
++{
++
++    if (processTimerData == NULL)
++	return;
++
++    my_free_processes(processTimerData->firstProcess);
++    free(processTimerData);
++    processTimerData = NULL;
++}
++
++
++static void my_processTimerData_callback(void *null)
++{
++
++    if (processTimerData == NULL)
++	return;
++
++    Process *p;
++    Process *next;
++
++
++    for (p = processTimerData->firstProcess; p != NULL; p = next) {
++
++	next = p->next;
++
++	int status;
++	int toRemove = 0;
++
++	if (waitpid(p->pid, &status, WNOHANG) == p->pid) {
++	    if (WIFEXITED(status)) {
++		p->exitValue = WEXITSTATUS(status);
++		my_error("Process '%s' (%d) returns exit code %d.", p->command, p->pid, p->exitValue);
++	    } else {
++		p->exitValue = -1;
++		my_error("Process '%s' (%d) did not return exit code.", p->command, p->pid);
++	    }
++
++	    if (p->tree != NULL) {
++		RESULT result;
++		result.string = NULL;
++		DelResult(&result);
++
++		if (Eval(p->tree, &result) != 0)
++		    my_error("Couldn't eval callback expression of process '%s' (%d).", p->command, p->pid);
++
++		DelResult(&result);
++	    }
++
++	    toRemove = 1;
++	}
++
++	if (!toRemove && p->hasTimeLimit) {
++	    p->timeLeft -= PROCESS_TIMER_INTERVAL;
++	    my_error(" ------------------------------callback %ld", p->timeLeft);
++	    if (p->timeLeft <= 0) {
++
++		int sig = p->timeLeft <= -PROCESS_TIMER_INTERVAL ? SIGKILL : SIGTERM;
++
++		/* kill process group */
++		if (kill(-p->pid, sig) != 0)
++		    my_error("Error while trying to send signal %d to process group of '%s' (%d)",
++			     sig, p->command, p->pid);
++	    }
++	}
++
++	if (toRemove) {
++
++	    if (processTimerData->processNb <= 1) {
++		my_free_processTimerData();
++		return;
++	    }
++
++	    if (p->prev != NULL)
++		p->prev->next = p->next;
++	    else
++		processTimerData->firstProcess = p->next;
++
++	    if (p->next != NULL)
++		p->next->prev = p->prev;
++
++	    my_free_process(p);
++	    processTimerData->processNb--;
++	}
++    }
++
++    timer_add_late(my_processTimerData_callback, NULL, PROCESS_TIMER_INTERVAL, 1);
++
++}
++
++static Process *my_run(int argc, RESULT * argv[], char *fctName)
++{
++
++    static long nextId = 0;
++
++    if (argc < 2) {
++	my_error("%s requires at least 2 arguments (duration, name of program).", fctName);
++	return NULL;
++    }
++
++    if ((argv[0]->type & R_NUMBER) == 0 || R2N(argv[0]) < 0 || R2N(argv[0]) > LONG_MAX) {
++	my_error("%s requires an integer from [0..%ld] as first argument (duration).", fctName, LONG_MAX);
++	return NULL;
++    }
++
++    long timeLeft = (long) R2N(argv[0]);
++
++
++
++
++    if ((argv[1]->type & R_STRING) == 0) {
++	my_error("%s requires a string as second argument (name of program).", fctName);
++	return NULL;
++    }
++
++    int i, j;
++    int len = 0;
++
++    char *args[argc];
++
++    for (i = 1; i < argc; i++) {
++	char *str = R2S(argv[i]);
++	if (str == NULL) {
++	    my_error("Invalide argument for %s:", fctName);
++	    for (j = 1; j < i; j++)
++		my_error("  %2d: '%s'", j, R2S(argv[j]));
++	    my_error("  %2d: INVALIDE", i);
++	    return NULL;
++	}
++	args[i - 1] = str;
++	len += strlen(str) + 1;
++    }
++
++    char *prog = args[0];
++    args[argc - 1] = NULL;
++
++    char *cmd = malloc(len * sizeof(char));
++    *cmd = '\0';
++    for (i = 1; i < argc; i++) {
++	strcat(cmd, R2S(argv[i]));
++	if (i < argc - 1)
++	    strcat(cmd, " ");
++    }
++
++    int errorPipes[2];
++    pipe(errorPipes);
++    if (fcntl(errorPipes[1], F_SETFD, FD_CLOEXEC) == -1) {
++	my_error("Can't set error pipe to close on exec.");
++	return NULL;
++    }
++
++    pid_t pid = fork();
++
++    /* child */
++    if (pid == 0) {
++
++	close(errorPipes[0]);
++
++	int fdNull;
++
++	if (setpgid(0, 0) != 0) {
++	    my_error("Fail to change gpid of '%s'", cmd);
++	    char error = ERROR_PGID;
++	    write(errorPipes[1], &error, 1);
++	    close(errorPipes[1]);
++	    _Exit(1);
++	}
++
++	for (i = 0; i <= 2; i++) {
++	    if ((fdNull = open("/dev/null", i == 0 ? O_RDONLY : O_WRONLY)) < 0 || dup2(fdNull, i) != i) {
++
++		openlog("LCD4Linux", LOG_PID, LOG_USER);
++		syslog(LOG_ERR, "Couldn't redirect fd %d of forked process '%s' to '/dev/null'.", i, cmd);
++		closelog();	/* TODO: Problem with main syslog? */
++
++		char error = ERROR_DUP;
++		write(errorPipes[1], &error, 1);
++		close(errorPipes[1]);
++		_Exit(1);
++	    }
++	}
++
++	execvp(prog, args);
++
++	int errsv = errno;
++	openlog("LCD4Linux", LOG_PID, LOG_USER);
++	syslog(LOG_ERR, "Fail to execute '%s': %s", cmd, strerror(errsv));
++	closelog();		/* TODO: Problem with main syslog? */
++
++	char error = ERROR_EXEC;
++	write(errorPipes[1], &error, 1);
++	close(errorPipes[1]);
++
++	_Exit(1);
++    }
++
++    if (pid == -1) {
++	my_error("Couldn't fork to '%s'.", cmd);
++	free(cmd);
++    }
++
++    /* parent */
++    if (pid > 0) {
++
++	close(errorPipes[1]);
++	char res;
++	int nb = read(errorPipes[0], &res, 1);
++	close(errorPipes[0]);
++	/*  child failed to dup2, change gpid or failed to exec */
++	if (nb > 0) {
++	    if (res == ERROR_DUP || res == ERROR_EXEC)
++		my_error("Error in child process. See log.");
++	    return NULL;
++	}
++
++	if (processTimerData == NULL) {
++	    processTimerData = malloc(sizeof(ProcessTimerData));
++	    processTimerData->firstProcess = NULL;
++	    processTimerData->processNb = 0;
++	    timer_add_late(my_processTimerData_callback, NULL, PROCESS_TIMER_INTERVAL, 1);
++	}
++
++	Process *process = malloc(sizeof(Process));
++
++	process->id = nextId++;
++	process->pid = pid;
++	process->command = cmd;
++	process->tree = NULL;
++	process->exitValue = -1;
++	process->hasTimeLimit = timeLeft == 0 ? 0 : 1;
++	process->timeLeft = 1000 * timeLeft;
++	process->prev = NULL;
++	if (processTimerData->firstProcess != NULL)
++	    processTimerData->firstProcess->prev = process;
++	process->next = processTimerData->firstProcess;
++	processTimerData->firstProcess = process;
++	processTimerData->processNb++;
++
++	return process;
++    }
++    return NULL;
++}
++
++static void plugin_run_run(RESULT * result, int argc, RESULT * argv[])
++{
++    Process *p = my_run(argc, argv, "run()");
++    double res = -1;
++    if (p != NULL)
++	res = p->id;
++    SetResult(&result, R_NUMBER, &res);
++}
++
++static void plugin_run_call(RESULT * result, int argc, RESULT * argv[])
++{
++
++    double res = -1;
++
++    if (argc < 3) {
++	my_error("call() requires at least 3 arguments.");
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    void *tree = NULL;
++
++    char *expression = R2S(argv[0]);
++
++    if (*expression == '\0')
++	expression = NULL;
++
++    if (expression != NULL && Compile(expression, &tree) != 0) {
++	DelTree(tree);
++	my_error("Couldn't compile expression '%s' in call().", expression);
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    Process *p = my_run(argc - 1, argv + 1, "call()");
++    if (p != NULL) {
++	res = p->id;
++	p->tree = tree;
++    } else {
++	DelTree(tree);
++    }
++
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++Process *my_get_process_by_id_result(RESULT * result, RESULT * rId, char *fctName)
++{
++
++    double error = -1;
++    SetResult(&result, R_NUMBER, &error);
++
++    long id = 0;
++
++    if ((rId->type & R_NUMBER) == 0)
++	id = -1;
++    if (id >= 0) {
++	double dId = R2N(rId);
++	id = (long) dId;
++	if (id != dId || id < 0)
++	    id = -1;
++    }
++
++    if (id < 0) {
++	my_error("Argument '%s' given to function %s is not an integer from [0..%ld]", R2S(rId), fctName, LONG_MAX);
++	return NULL;
++    }
++
++    Process *process = NULL;
++
++    if (processTimerData != NULL) {
++	Process *p;
++	for (p = processTimerData->firstProcess; p != NULL; p = p->next)
++	    if (p->id == id) {
++		process = p;
++		break;
++	    }
++    }
++
++    if (process == NULL)
++	my_error("No process with id %ld found (function %s).", id, fctName);
++
++
++    error = 0;
++    SetResult(&result, R_NUMBER, &error);
++
++    return process;
++
++}
++
++static void plugin_run_pid(RESULT * result, RESULT * rId)
++{
++
++    Process *process = my_get_process_by_id_result(result, rId, "pid()");
++    if (process == NULL)
++	return;
++
++    double pid = process->pid;
++    SetResult(&result, R_NUMBER, &pid);
++}
++
++static void plugin_run_exitval(RESULT * result, RESULT * rId)
++{
++
++    Process *process = my_get_process_by_id_result(result, rId, "exitval()");
++    if (process == NULL)
++	return;
++
++    double exVal = process->exitValue;
++    SetResult(&result, R_NUMBER, &exVal);
++}
++
++
++static void plugin_run_cmd(RESULT * result, RESULT * rId)
++{
++
++    Process *process = my_get_process_by_id_result(result, rId, "cmd()");
++    if (process == NULL)
++	return;
++
++    SetResult(&result, R_STRING, process->command);
++}
++
++static void plugin_run_kill(RESULT * result, RESULT * rId)
++{
++
++    Process *process = my_get_process_by_id_result(result, rId, "kill()");
++    if (process == NULL)
++	return;
++
++    process->hasTimeLimit = 1;
++    process->timeLeft = PROCESS_TIMER_INTERVAL;
++
++    /* let my_processTimerData_callback do the job */
++    my_processTimerData_callback(NULL);
++}
++
++int plugin_init_run(void)
++{
++    AddFunction("run::run", -1, plugin_run_run);
++    AddFunction("run::call", -1, plugin_run_call);
++    AddFunction("run::kill", 1, plugin_run_kill);
++    AddFunction("run::pid", 1, plugin_run_pid);
++    AddFunction("run::cmd", 1, plugin_run_cmd);
++    AddFunction("run::exitval", 1, plugin_run_exitval);
++
++    return 0;
++}
++
++void plugin_exit_run(void)
++{
++    my_free_processTimerData();
++}

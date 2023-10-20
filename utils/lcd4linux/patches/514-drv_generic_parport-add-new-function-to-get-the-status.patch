@@ -1,0 +1,56 @@
+From d8fd30446b2baead01d39ebe1a4c15382f9fcdb5 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:15:16 +0200
+Subject: [PATCH] drv_generic_parport: add new function to get the status
+
+The added fuction drv_generic_parport_hardwire_status is used by the
+FutabaVFD driver.
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ drv_generic_parport.c | 21 +++++++++++++++++++++
+ drv_generic_parport.h |  3 ++-
+ 2 files changed, 23 insertions(+), 1 deletion(-)
+
+--- a/drv_generic_parport.c
++++ b/drv_generic_parport.c
+@@ -331,6 +331,27 @@ static unsigned char drv_generic_parport
+ }
+ 
+ 
++unsigned char drv_generic_parport_hardwire_status(const char *name, const char *signal)
++{
++    unsigned char wire;
++    char key[256];
++    char *val;
++
++    qprintf(key, sizeof(key), "Wire.%s", name);
++    val = cfg_get(Section, key, "");
++
++    /* maybe warn the user */
++    if (*val != '\0' && strcasecmp(signal, val) != 0) {
++	error("%s: ignoring configured signal <%s> for status line <%s>", Driver, val, name);
++    }
++    free(val);
++
++    wire = drv_generic_parport_signal_status(name, signal);
++
++    return wire;
++}
++
++
+ unsigned char drv_generic_parport_wire_status(const char *name, const char *deflt)
+ {
+     unsigned char wire;
+--- a/drv_generic_parport.h
++++ b/drv_generic_parport.h
+@@ -86,7 +86,8 @@
+ int drv_generic_parport_open(const char *section, const char *driver);
+ int drv_generic_parport_close(void);
+ unsigned char drv_generic_parport_wire_ctrl(const char *name, const char *deflt);
+-unsigned char drv_generic_parport_hardwire_ctrl(const char *name, const char *deflt);
++unsigned char drv_generic_parport_hardwire_ctrl(const char *name, const char *signal);
++unsigned char drv_generic_parport_hardwire_status(const char *name, const char *signal);
+ unsigned char drv_generic_parport_wire_status(const char *name, const char *deflt);
+ unsigned char drv_generic_parport_wire_data(const char *name, const char *deflt);
+ void drv_generic_parport_direction(const int direction);

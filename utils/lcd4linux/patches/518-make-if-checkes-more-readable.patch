@@ -1,0 +1,34 @@
+From 0b1c9361ec27f7da79e4566b316f1e91339dd097 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:23:21 +0200
+Subject: [PATCH] property: make if checkes more readable
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ property.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/property.c
++++ b/property.c
+@@ -90,7 +90,6 @@ void property_load(const char *section,
+ 
+     /* pre-compile the expression */
+     Compile(prop->expression, &prop->compiled);
+-
+ }
+ 
+ 
+@@ -116,10 +115,11 @@ int property_eval(PROPERTY * prop)
+ 
+     /* check if property value has changed */
+     update = 1;
+-    if (prop->result.type & R_NUMBER && old.type & R_NUMBER && prop->result.number == old.number) {
++
++    if ((prop->result.type & R_NUMBER) && (old.type & R_NUMBER) && prop->result.number == old.number) {
+ 	update = 0;
+     }
+-    if (prop->result.type & R_STRING && old.type & R_STRING && prop->result.size == old.size) {
++    if ((prop->result.type & R_STRING) && (old.type & R_STRING) && (prop->result.size == old.size)) {
+ 	if (prop->result.string == NULL && old.string == NULL) {
+ 	    update = 0;
+ 	} else if (prop->result.string != NULL && old.string != NULL && strcmp(prop->result.string, old.string) == 0) {

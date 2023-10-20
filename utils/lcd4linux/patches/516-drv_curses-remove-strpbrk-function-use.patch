@@ -1,0 +1,41 @@
+From 8fcf2ac200a9c61dbb68b068efc4f15ee92568cd Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:17:14 +0200
+Subject: [PATCH] drv_Curses: remove strpbrk function use
+
+The function 'strpbrk' can't be used here because 'data' is NOT a '\0'
+terminated string.
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ drv_Curses.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+--- a/drv_Curses.c
++++ b/drv_Curses.c
+@@ -81,16 +81,20 @@ static void drv_Curs_clear(void)
+ static void drv_Curs_write(const int row, const int col, const char *data, const int len)
+ {
+     int l = len;
+-    char *p;
+ 
+-    while ((p = strpbrk(data, "\r\n")) != NULL) {
+-	*p = '\0';
+-    }
++    int i;
++    for (i = 0; i < len; i++)
++	if (data[i] == '\r' || data[i] == '\n')
++	    break;
++
++    char str[i + 1];
++    memcpy(str, data, i);
++    str[i] = '\0';
+ 
+     if (col < DCOLS) {
+ 	if (DCOLS - col < l)
+ 	    l = DCOLS - col;
+-	mvwprintw(w, row + 1, col + 1, "%.*s", l, data);
++	mvwprintw(w, row + 1, col + 1, "%.*s", l, str);
+ 	wmove(w, DROWS + 1, 0);
+ 	wrefresh(w);
+     }

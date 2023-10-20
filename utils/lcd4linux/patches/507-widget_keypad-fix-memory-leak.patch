@@ -1,0 +1,28 @@
+From 48470835647fce801b025acbfe5d65961c5cbc9a Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:51:47 +0200
+Subject: [PATCH] widget_keypad: fix memory leak
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ widget_keypad.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/widget_keypad.c
++++ b/widget_keypad.c
+@@ -85,6 +85,7 @@ int widget_keypad_init(WIDGET * Self)
+ 	keypad->key = WIDGET_KEY_RELEASED;
+     else
+ 	keypad->key = WIDGET_KEY_PRESSED;
++    free(c);
+ 
+     /* position: confirm (default), up, down, left, right, cancel */
+     c = cfg_get(section, "position", "confirm");
+@@ -101,6 +102,7 @@ int widget_keypad_init(WIDGET * Self)
+     else
+ 	keypad->key += WIDGET_KEY_CONFIRM;
+ 
++    free(c);
+     free(section);
+     Self->data = keypad;
+     Self->x2 = NOCOORD;

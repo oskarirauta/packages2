@@ -1,0 +1,53 @@
+From 3e0bea04b5acb35d1505fef823cbe5d1b49c5e0e Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:12:07 +0200
+Subject: [PATCH] plugin_math: add random function
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ plugin_math.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+--- a/plugin_math.c
++++ b/plugin_math.c
+@@ -38,6 +38,7 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
++#include <time.h>
+ 
+ #include "debug.h"
+ #include "plugin.h"
+@@ -146,6 +147,21 @@ static void my_decode(RESULT * result, i
+     CopyResult(&result, argv[index + 1]);
+ }
+ 
++/* random double from the half-open interval [0,1) */
++static void my_rand(RESULT * result)
++{
++    static int init = 0;
++
++    if (!init) {
++	srand(time(NULL));
++	init = 1;
++    }
++
++    double value = 1. * rand() / (1. * RAND_MAX + 1);
++    SetResult(&result, R_NUMBER, &value);
++
++}
++
+ 
+ int plugin_init_math(void)
+ {
+@@ -176,6 +192,10 @@ int plugin_init_math(void)
+     /* decode */
+     AddFunction("decode", -1, my_decode);
+ 
++    /* random [0,1) */
++    AddFunction("rand", 0, my_rand);
++
++
+     return 0;
+ }
+ 

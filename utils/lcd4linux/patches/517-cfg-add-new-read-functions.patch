@@ -1,0 +1,109 @@
+From 3420fae20c0385dd323dac6dac158e3cf046d1ad Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:18:20 +0200
+Subject: [PATCH] cfg: add new read functions
+
+Three functions were added to make the reading od the config more easy.
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ cfg.c | 65 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ cfg.h |  4 ++++
+ 2 files changed, 69 insertions(+)
+
+--- a/cfg.c
++++ b/cfg.c
+@@ -76,6 +76,8 @@
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
++#include <stdarg.h>
++
+ #include <string.h>
+ #include <ctype.h>
+ #include <errno.h>
+@@ -270,6 +272,7 @@ char *cfg_list(const char *section)
+     /* search matching entries */
+     for (i = 0; i < nConfig; i++) {
+ 	if (strncasecmp(Config[i].key, key, len) == 0) {
++
+ 	    list = realloc(list, strlen(list) + strlen(Config[i].key) - len + 2);
+ 	    if (*list != '\0')
+ 		strcat(list, "|");
+@@ -712,3 +715,65 @@ int cfg_exit(void)
+ 
+     return 0;
+ }
++
++/* Creates a formated heap string
++ * pro: no buffer overflow
++ * con: slower
++ */
++char *cfg_make_str(const char *format, ...)
++{
++    char *str = NULL;
++
++    va_list args;
++    va_start(args, format);
++    int len = vasprintf(&str, format, args);
++    va_end(args);
++
++    if (len < 0) {
++	error("cfg_make_str() could't create string.");
++	return NULL;
++    }
++    return str;
++}
++
++/* Checks if section exists in config
++ *  
++ * returns 0 if it doesn't or for leafs, else 1
++ */
++int cfg_exist(const char *section)
++{
++
++    char *result = cfg_list(section);
++
++    if (result == NULL || *result == '\0') {
++	free(result);
++	return 0;
++    }
++    free(result);
++    return 1;
++}
++
++/* Counts numbered sections like
++ * 
++ * Key1 {...}
++ * Key2 {...}
++ * ...
++ * 
++ * doesn't count leafs
++ */
++int cfg_count(const char *sectionPrefix, const int max)
++{
++
++    int i;
++    for (i = 0; i < max; i++) {
++	char *section = cfg_make_str("%s%d", sectionPrefix, i + 1);
++	if (section == NULL)
++	    break;
++
++	int r = cfg_exist(section);
++	free(section);
++	if (r == 0)
++	    break;
++    }
++    return i;
++}
+--- a/cfg.h
++++ b/cfg.h
+@@ -37,4 +37,8 @@ char *cfg_get(const char *section, const
+ int cfg_number(const char *section, const char *key, const int defval, const int min, const int max, int *value);
+ int cfg_exit(void);
+ 
++char *cfg_make_str(const char *format, ...) __attribute__ ((format(__printf__, 1, 2)));
++int cfg_exist(const char *section);
++int cfg_count(const char *sectionPrefix, const int max);
++
+ #endif

@@ -1,0 +1,1270 @@
+From aaf98e81714868df058568f203c6f2966d006305 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:39:53 +0200
+Subject: [PATCH] plugin: add layout plugin
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ plugin_layout.c | 1256 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 1256 insertions(+)
+ create mode 100644 plugin_layout.c
+
+--- /dev/null
++++ b/plugin_layout.c
+@@ -0,0 +1,1256 @@
++/* $Id$
++ * $URL$
++ *
++ * This plugin allows to switch between layouts while runtime.
++ * 
++ * https://lcd4linux.bulix.org/wiki/plugin_layout
++ *
++ * Copyright (C) 2003 Michael Reinelt <michael@reinelt.co.at>
++ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The LCD4Linux Team <lcd4linux-devel@users.sourceforge.net>
++ * Copyright (C) 2015 Marcus Menzel <codingmax@gmx-topmail.de>
++ *
++ * This file is part of LCD4Linux.
++ *
++ * LCD4Linux is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * LCD4Linux is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdarg.h>
++
++#include "config.h"
++#include "debug.h"
++#include "plugin.h"
++#include "cfg.h"
++#include "layout.h"
++#include "timer.h"
++#include "timer_group.h"
++#include "widget.h"
++#include "action.h"
++#include "drv_generic_text.h"
++#include "drv_generic_graphic.h"
++
++#ifdef WITH_DMALLOC
++#include <dmalloc.h>
++#endif
++
++/*timer.c*/
++extern int nTimers;
++extern TIMER *Timers;
++
++/*timer_group.c*/
++extern int nTimerGroupWidgets;
++extern TIMER_GROUP_WIDGET *TimerGroupWidgets;
++
++/*widget_*.c*/
++extern void widget_timer_update(void *Self);
++extern void widget_text_update(void *Self);
++extern void widget_bar_update(void *Self);
++extern void widget_icon_update(void *Self);
++#ifdef WITH_IMAGE
++extern void widget_image_update(void *Self);
++#endif
++
++/*plugin_menu.c*/
++#ifdef PLUGIN_MENU
++extern int plugin_init_menu(void);
++#endif
++
++#define SECTION "Plugin:Layout"
++#define PLUGIN "Layout"
++#define MAX_GROUPS 1000
++#define MAX_LAYOUTS 1000
++
++#define my_debug(args...) message (2, __FILE__ ": " args)
++#define my_info(args...)  message (1, "Info  Plugin '" PLUGIN "': " args)
++#define my_error(args...) message (0, "ERROR Plugin '" PLUGIN "': " args)
++#define my_noMemory() message (0, "ERROR Couldn't allocate new memory (%s:%d).",PLUGIN, __LINE__)
++
++
++typedef struct LayoutGroup LayoutGroup;
++
++
++typedef struct Needle {
++    void (*callback) (void *data);
++    void *data;
++} Needle;
++
++
++typedef struct Layout {
++    char *name;
++    LayoutGroup *group;
++    Action *firstAction;
++    TIMER_GROUP_WIDGET **timerGroupWidgets;
++    int timerGroupWidgetNb;
++    int *timerGroupWidgetsUpdate;
++    TIMER **timers;
++    int timerNb;
++} Layout;
++
++
++typedef struct LayoutGroup {
++    char *name;
++    Action *firstAction;
++    Layout **layouts;
++    int layoutNb;
++    int layoutIdx;
++} LayoutGroup;
++
++
++typedef struct Plugin {
++    Action *firstAction;
++    LayoutGroup **groups;
++    int groupNb;
++    int groupIdx;
++    int isTextDrv;
++    int initGroupIdx;
++    int initLayoutIdx;
++    LayoutGroup *currentGroup;
++    Layout *currentLayout;
++} Plugin;
++
++
++static Plugin *plugin = NULL;
++
++
++int plugin_layout_isRunning()
++{
++    return plugin != NULL ? 1 : 0;
++}
++
++static int my_is_graphic_display()
++{
++    return drv_generic_graphic_real_blit == NULL ? 0 : 1;
++}
++
++
++static int my_show_layout(const Layout * layout)
++{
++
++    if (layout == NULL)
++	return 0;
++
++    char *widgetClasses[4] = { "text", "bar", "icon", "image" };
++    void (*widgetUpdates[4]) (void *) = {
++	widget_text_update, widget_bar_update, widget_icon_update,
++#ifdef WITH_IMAGE
++	    widget_image_update
++#else
++	    NULL
++#endif
++    };
++
++    if (my_is_graphic_display())
++	drv_generic_graphic_clear();
++    else {
++	drv_generic_text_clear(1);
++    }
++
++    int i, r;
++
++    for (i = 0; i < layout->timerGroupWidgetNb; i++) {
++
++	TIMER_GROUP_WIDGET *tgw = layout->timerGroupWidgets[i];
++	r = timer_add_widget(tgw->callback, tgw->data, tgw->interval, tgw->one_shot);
++
++	if (r < 0) {
++	    my_error("Can't set widget timers of layout '%s.%s'", layout->group->name, layout->name);
++	    return -1;
++	}
++
++	/*forced draw of widgets; update before first draw */
++	WIDGET *W = (WIDGET *) tgw->data;
++	if (layout->timerGroupWidgetsUpdate[i] == 1) {
++
++	    layout->timerGroupWidgetsUpdate[i] = 0;
++	    int j;
++	    for (j = 0; j < 4; j++) {
++
++		if (widgetUpdates[j] != NULL && strcmp(W->class->name, widgetClasses[j]) == 0) {
++
++		    widgetUpdates[j] (W);
++		    break;
++		}
++	    }
++	}
++	if (W->class->draw != NULL)
++	    W->class->draw(W);
++    }
++
++    if (!my_is_graphic_display())
++	drv_generic_text_clear(2);
++
++    for (i = 0; i < layout->timerNb; i++) {
++	TIMER *timer = layout->timers[i];
++	r = timer_add(timer->callback, timer->data, timer->interval, timer->one_shot);
++	if (r < 0) {
++	    my_error("Can't set timers of layout '%s.%s'.", layout->group->name, layout->name);
++	    return -1;
++	}
++    }
++    return 0;
++}
++
++
++static int my_hide_layout(const Layout * layout)
++{
++
++    if (layout == NULL)
++	return 0;
++
++    int i, j;
++    for (i = 0; i < layout->timerGroupWidgetNb; i++) {
++
++	TIMER_GROUP_WIDGET *tgw = layout->timerGroupWidgets[i];
++
++	if (timer_remove_widget(tgw->callback, tgw->data) < 0) {
++	    if (tgw->one_shot != 1 && tgw->interval != 0) {
++
++		my_error("Can't unset widget timers of layout '%s.%s'.", layout->group->name, layout->name);
++		return -1;
++	    }
++	}
++    }
++
++    for (i = 0; i < layout->timerNb; i++) {
++	TIMER *timer = layout->timers[i];
++
++	/* store current interval first */
++	for (j = 0; j < nTimers; j++) {
++	    if (Timers[j].active != TIMER_INACTIVE
++		&& Timers[j].data == timer->data && Timers[j].callback == timer->callback) {
++
++		timer->interval = Timers[j].interval;
++	    }
++	}
++
++	if (timer_remove(timer->callback, timer->data) < 0) {
++	    if (timer->one_shot != 1 && timer->interval != 0) {
++		my_error("Can't unset timers of layout '%s.%s'.", layout->group->name, layout->name);
++		return -1;
++	    }
++	}
++    }
++    return 0;
++}
++
++
++static int my_switch_layout(const int groupIdx, const int layoutIdx)
++{
++
++    if (groupIdx < 0 || groupIdx >= plugin->groupNb)
++	return -1;
++
++    LayoutGroup *oldGroup = plugin->currentGroup;
++    LayoutGroup *newGroup = plugin->groups[groupIdx];
++
++    if (layoutIdx < 0 || layoutIdx >= newGroup->layoutNb)
++	return -1;
++
++    Layout *oldLayout = plugin->currentLayout;
++    Layout *newLayout = newGroup->layouts[layoutIdx];
++
++    int status = 0;
++
++    if (newLayout != oldLayout) {
++
++	if (oldLayout != NULL)
++	    action_trigger(oldLayout->firstAction, "onexit");
++
++	if (newGroup != oldGroup && oldGroup != NULL)
++	    action_trigger(oldGroup->firstAction, "onexit");
++
++	plugin->groupIdx = groupIdx;
++	plugin->currentGroup = newGroup;
++	plugin->currentGroup->layoutIdx = layoutIdx;
++	plugin->currentLayout = newLayout;
++
++	if (my_hide_layout(oldLayout) < 0) {
++	    status = -1;
++	    my_error("Couldn't hide layout '%s.%s'.", oldGroup->name, oldLayout->name);
++	}
++	if (my_show_layout(newLayout) < 0) {
++	    status = -1;
++	    my_error("Couldn't show layout '%s.%s'.", newGroup->name, newLayout->name);
++	}
++	if (newGroup != oldGroup)
++	    action_trigger(newGroup->firstAction, "onenter");
++
++	action_trigger(newLayout->firstAction, "onenter");
++    }
++
++    return status;
++}
++
++
++static int my_init_widgets(Layout * layout)
++{
++
++    int i, j, idx;
++
++    char *section = cfg_make_str("Layout:%s", layout->name);
++    char *result = cfg_list(section);
++    free(section);
++
++    if (result == NULL || *result == '\0') {
++	free(result);
++	my_error("Layout '%s' has not been defined in conf-file.", layout->name);
++	return -1;
++    }
++    free(result);
++
++    Needle tgwNeedles[nTimerGroupWidgets];
++    int tgwBeforeNb = 0;
++
++    for (i = 0; i < nTimerGroupWidgets; i++) {
++	if (TimerGroupWidgets[i].active != TIMER_INACTIVE) {
++	    tgwNeedles[tgwBeforeNb].callback = TimerGroupWidgets[i].callback;
++	    tgwNeedles[tgwBeforeNb].data = TimerGroupWidgets[i].data;
++	    tgwBeforeNb++;
++	}
++    }
++
++    Needle timerNeedles[nTimers];
++    int timerBeforeNb = 0;
++
++    for (i = 0; i < nTimers; i++) {
++	if (Timers[i].active != TIMER_INACTIVE) {
++	    timerNeedles[timerBeforeNb].callback = Timers[i].callback;
++	    timerNeedles[timerBeforeNb].data = Timers[i].data;
++	    timerBeforeNb++;
++	}
++    }
++
++    if (layout_init(layout->name) != 0) {
++	my_error("Error while try to init layout '%s.%s'.", layout->group->name, layout->name);
++	return -1;
++    }
++
++    layout->timerGroupWidgets = malloc(nTimerGroupWidgets * sizeof(TIMER_GROUP_WIDGET *));
++
++    if (nTimerGroupWidgets > 0 && layout->timerGroupWidgets == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    for (i = 0; i < nTimerGroupWidgets; i++)
++	layout->timerGroupWidgets[i] = NULL;
++
++    idx = 0;
++    for (i = 0; i < nTimerGroupWidgets; i++) {
++
++	if (TimerGroupWidgets[i].active == TIMER_INACTIVE)
++	    continue;
++
++	int ignore = 0;
++	for (j = 0; j < tgwBeforeNb; j++) {
++	    if ((tgwNeedles[j].callback == TimerGroupWidgets[i].callback)
++		&& (tgwNeedles[j].data == TimerGroupWidgets[i].data)) {
++		ignore = 1;
++		break;
++	    }
++	}
++	if (ignore == 0) {
++	    layout->timerGroupWidgets[idx] = malloc(sizeof(TIMER_GROUP_WIDGET));
++	    if (layout->timerGroupWidgets[idx] == NULL) {
++		my_noMemory();
++		return -1;
++	    }
++	    *layout->timerGroupWidgets[idx] = TimerGroupWidgets[i];
++	    idx++;
++	}
++    }
++    layout->timerGroupWidgetNb = idx;
++
++    TIMER_GROUP_WIDGET **pTgw = realloc(layout->timerGroupWidgets,
++					layout->timerGroupWidgetNb * sizeof(TIMER_GROUP_WIDGET *));
++
++    if (layout->timerGroupWidgetNb > 0 && pTgw == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    layout->timerGroupWidgets = pTgw;
++
++    layout->timerGroupWidgetsUpdate = malloc(layout->timerGroupWidgetNb * sizeof(int));
++
++    if (layout->timerGroupWidgetNb > 0 && layout->timerGroupWidgetsUpdate == NULL) {
++
++
++	my_noMemory();
++	return -1;
++    }
++
++    for (i = 0; i < layout->timerGroupWidgetNb; i++)
++	layout->timerGroupWidgetsUpdate[i] = 1;
++
++    /* save timers related with this layout */
++
++    layout->timers = malloc(nTimers * sizeof(TIMER *));
++
++    if (nTimers > 0 && layout->timers == NULL) {
++
++	my_noMemory();
++	return -1;
++    }
++
++    idx = 0;
++    for (i = 0; i < nTimers; i++) {
++
++	if (Timers[i].active == TIMER_INACTIVE)
++	    continue;
++
++	int ignore = 0;
++	for (j = 0; j < timerBeforeNb; j++) {
++	    if ((timerNeedles[j].callback == Timers[i].callback)
++		&& (timerNeedles[j].data == Timers[i].data)) {
++
++		ignore = 1;
++		break;
++	    }
++	}
++
++	if (ignore == 0) {
++	    ignore = 1;
++
++	    for (j = 0; j < layout->timerGroupWidgetNb; j++) {
++
++		/* only widget related timers */
++		if (layout->timerGroupWidgets[j]->data == Timers[i].data) {
++		    ignore = 0;
++		    break;
++		}
++
++	    }
++	    if (Timers[i].callback == widget_timer_update)
++		ignore = 0;
++	}
++	if (ignore == 0) {
++	    layout->timers[idx] = malloc(sizeof(TIMER));
++	    if (layout->timers[idx] == NULL) {
++		my_noMemory();
++		return -1;
++	    }
++	    *layout->timers[idx] = Timers[i];
++	    idx++;
++	}
++    }
++    layout->timerNb = idx;
++
++    TIMER **pT = realloc(layout->timers, idx * sizeof(TIMER *));
++
++    if (layout->timerNb > 0 && pT == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    layout->timers = pT;
++
++    return my_hide_layout(layout);
++}
++
++
++static void my_free_layout(Layout * layout)
++{
++
++    if (layout == NULL)
++	return;
++    free(layout->name);
++    action_free_all(layout->firstAction);
++    int i;
++    if (layout->timerGroupWidgets != NULL) {
++	for (i = 0; i < layout->timerGroupWidgetNb; i++)
++	    free(layout->timerGroupWidgets[i]);
++	free(layout->timerGroupWidgets);
++    }
++    free(layout->timerGroupWidgetsUpdate);
++    if (layout->timers != NULL) {
++	for (i = 0; i < layout->timerNb; i++)
++	    free(layout->timers[i]);
++	free(layout->timers);
++    }
++    free(layout);
++}
++
++
++static void my_free_group(LayoutGroup * group)
++{
++
++    if (group == NULL)
++	return;
++    free(group->name);
++    action_free_all(group->firstAction);
++    if (group->layouts != NULL) {
++	int i;
++	for (i = 0; i < group->layoutNb; i++)
++	    my_free_layout(group->layouts[i]);
++	free(group->layouts);
++    }
++    free(group);
++}
++
++
++static void my_free_plugin()
++{
++
++    if (plugin == NULL)
++	return;
++
++    action_free_all(plugin->firstAction);
++
++    if (plugin->groups != NULL) {
++	int i;
++	for (i = 0; i < plugin->groupNb; i++)
++	    my_free_group(plugin->groups[i]);
++	free(plugin->groups);
++    }
++    free(plugin);
++    plugin = NULL;
++}
++
++
++/*checks if layouts contain allowed widgets*/
++static int my_precheck_layouts()
++{
++
++    int ok = 1;
++    int g, k, i;
++
++    void *visibleWidgetCallbacks[] = { widget_text_update,
++	widget_icon_update,
++	widget_bar_update,
++#ifdef HAVE_GD_GD_H
++	widget_image_update
++#else
++	NULL
++#endif
++    };
++
++    for (i = 0; ok && i < nTimerGroupWidgets; i++) {
++
++	TIMER_GROUP_WIDGET *tgw = &TimerGroupWidgets[i];
++	if (tgw->active == 0)
++	    continue;
++	for (k = 0; ok && k < 4; k++)
++	    if (visibleWidgetCallbacks[k] != NULL && tgw->callback == visibleWidgetCallbacks[k]) {
++
++		char *name = cfg_get(NULL, "Layout", NULL);
++		my_error("Main Layout '%s' MUST NOT contain visible widgets (text,bar,icon,image).", name);
++		free(name);
++		ok = 0;
++	    }
++    }
++
++    char *needles[] = { "Keypad1", "Gpo1" };
++    char **names = NULL;
++    int nameNb = 0;
++    int maxG = cfg_count("Plugin:Layout.Group", MAX_GROUPS);
++
++    for (g = 1; g <= maxG; g++) {
++
++	for (k = 1; k <= MAX_LAYOUTS; k++) {
++
++	    char *key = cfg_make_str("Group%d.Layout%d.name", g, k);
++	    char *name = cfg_get(SECTION, key, NULL);
++	    free(key);
++	    if (name == NULL || *name == '\0') {
++		free(name);
++		break;
++	    }
++
++	    int nameFound = 0;
++	    for (i = 0; !nameFound && i < nameNb; i++)
++		if (strcmp(names[i], name) == 0)
++		    nameFound = 1;
++	    if (!nameFound) {
++		char **p = realloc(names, (nameNb + 1) * sizeof(char *));
++		if (p == NULL) {
++		    my_noMemory();
++		    free(name);
++		    free(names);
++		    return -1;
++		}
++		names = p;
++		names[nameNb] = name;
++		nameNb++;
++	    } else
++		free(name);
++	}
++	if (k == 1)
++	    break;
++    }
++
++    int msg = 0;
++
++    for (k = 0; k < nameNb; k++) {
++
++	char *section = cfg_make_str("Layout:%s", names[k]);
++	for (i = 0; i < 2; i++) {
++	    char *res = cfg_get(section, needles[i], NULL);
++	    if (res != NULL && *res != '\0') {
++
++		if (!msg) {
++		    my_error("Layouts used in Plugin 'layout' MUST NOT contain invisible widgets (timer,keypad,gpo).");
++		    msg = 1;
++		}
++		my_error("Layout '%s' used in Plugin 'Layout' contains invisible widget '%s'.", names[k], needles[i]);
++		ok = 0;
++	    }
++	    free(res);
++	}
++	free(section);
++	free(names[k]);
++    }
++    free(names);
++
++    return ok ? 0 : -1;
++}
++
++
++static int my_init_layout(int idxG, int idxL)
++{
++
++    LayoutGroup *group = plugin->groups[idxG];
++    Layout *layout = malloc(sizeof(Layout));
++    if (layout == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    group->layouts[idxL] = layout;
++    layout->name = NULL;
++    layout->group = NULL;
++    layout->firstAction = NULL;
++    layout->timerGroupWidgets = NULL;
++    layout->timerGroupWidgetsUpdate = NULL;
++    layout->timerGroupWidgetNb = 0;
++    layout->timers = NULL;
++    layout->timerNb = 0;
++
++    int i;
++
++    char *key = cfg_make_str("Group%d.Layout%d.name", idxG + 1, idxL + 1);
++    char *name = cfg_get(SECTION, key, NULL);
++    free(key);
++
++    if (name == NULL || *name == '\0') {
++	my_error("Layout %d of group %d has no valide name.", idxL + 1, idxG + 1);
++	free(name);
++	return -1;
++    }
++
++    for (i = 0; i < idxL; i++) {
++	if (strcmp(group->layouts[i]->name, name) == 0) {
++	    my_error("Layout name '%s' is not unique in group %d ('%s').", name, idxG + 1, group->name);
++	    free(name);
++	    return -1;
++	}
++    }
++
++    layout->name = name;
++    my_info("Group%d.Layout%d.name = '%s'.", idxG + 1, idxL + 1, name);
++
++    if (my_init_widgets(layout) < 0) {
++	my_error("Fail to init Layout '%s.%s'.", group->name, layout->name);
++	return -1;
++    }
++
++    char *section = cfg_make_str("%s.Group%d.Layout%d", SECTION, idxG + 1, idxL + 1);
++    action_init_default(section, &layout->firstAction);
++    free(section);
++
++    return 0;
++}
++
++
++static int my_init_group(int idxG)
++{
++
++    LayoutGroup *group = malloc(sizeof(LayoutGroup));
++    if (group == NULL) {
++	my_noMemory();
++	return -1;
++    }
++    plugin->groups[idxG] = group;
++    group->name = NULL;
++    group->firstAction = NULL;
++    group->layouts = NULL;
++    group->layoutNb = 0;
++    group->layoutIdx = -1;
++
++
++    int i, idxL;
++
++    char *key = cfg_make_str("Group%d.name", idxG + 1);
++    char *dfltName = cfg_make_str("Group%d", idxG + 1);
++    char *name = cfg_get(SECTION, key, dfltName);
++    free(key);
++    free(dfltName);
++
++    if (name == NULL || *name == '\0') {
++	free(name);
++	my_error("Group %d has no valide name.", idxG + 1);
++	return -1;
++    }
++    for (i = 0; i < idxG; i++) {
++	if (strcmp(plugin->groups[i]->name, name) == 0) {
++	    my_error("Group name '%s' is not unique.", name);
++	    free(name);
++	    return -1;
++	}
++    }
++    group->name = name;
++    my_info("Group%d.name = '%s'.", idxG + 1, name);
++
++    char *prefix = cfg_make_str("%s.Group%d.Layout", SECTION, idxG + 1);
++    int layoutNb = cfg_count(prefix, MAX_LAYOUTS);
++    free(prefix);
++
++    if (layoutNb <= 0) {
++	my_error("No layouts found in group '%s'.", group->name);
++	return -1;
++    }
++    group->layoutNb = layoutNb;
++    group->layoutIdx = 0;
++    my_info("%d layouts found in group '%s'.", group->layoutNb, group->name);
++
++    group->layouts = malloc(group->layoutNb * sizeof(Layout *));
++    if (group->layouts == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    for (idxL = 0; idxL < group->layoutNb; idxL++)
++	group->layouts[idxL] = NULL;
++
++
++    for (idxL = 0; idxL < group->layoutNb; idxL++)
++	if (my_init_layout(idxG, idxL) < 0)
++	    return -1;
++
++    key = cfg_make_str("%s.Group%d", SECTION, idxG + 1);
++    action_init_default(key, &group->firstAction);
++    free(key);
++
++    return 0;
++}
++
++
++/* return -1: error, 0: inactive, 1:active */
++static int my_init_plugin()
++{
++
++    int active = 0;
++    if (cfg_number(SECTION, "active", 0, 0, 1, &active) != 1) {
++	my_error("No valide 'active' value. Set to inactive.");
++	return -1;
++    }
++
++    if (!active) {
++	my_info("Set inactive.");
++	return 1;
++    } else
++	my_info("Try to init.");
++
++    if (my_precheck_layouts() < 0)
++	return -1;
++
++    plugin = malloc(sizeof(Plugin));
++    if (plugin == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    plugin->firstAction = NULL;
++    plugin->groups = NULL;
++    plugin->groupNb = 0;
++    plugin->groupIdx = -1;
++    plugin->currentGroup = NULL;
++    plugin->currentLayout = NULL;
++    plugin->isTextDrv = 1;
++    plugin->initGroupIdx = -1;
++    plugin->initLayoutIdx = -1;
++
++    /* TODD: check if current display is graphic or test display and
++     * update plugin->isTextDrv */
++
++    int idxG;
++
++    char *prefix = cfg_make_str("%s.Group", SECTION);
++    int groupNb = cfg_count(prefix, MAX_GROUPS);
++    free(prefix);
++
++    if (groupNb <= 0) {
++	my_error("No groups found.");
++	return -1;
++    }
++
++    plugin->groupNb = groupNb;
++    plugin->groupIdx = 0;
++    my_info("%d groups found.", plugin->groupNb);
++
++    plugin->groups = malloc(plugin->groupNb * sizeof(LayoutGroup *));
++
++    if (plugin->groups == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    for (idxG = 0; idxG < plugin->groupNb; idxG++)
++	plugin->groups[idxG] = NULL;
++
++    for (idxG = 0; idxG < plugin->groupNb; idxG++)
++	if (my_init_group(idxG) < 0)
++	    return -1;
++
++    action_init_default(SECTION, &plugin->firstAction);
++
++    char *name = cfg_get(SECTION, "initgroup", NULL);
++    if (name != NULL) {
++	for (idxG = 0; idxG < plugin->groupNb; idxG++)
++	    if (strcmp(name, plugin->groups[idxG]->name) == 0) {
++		plugin->initGroupIdx = idxG;
++		break;
++	    }
++	free(name);
++    }
++
++    if (plugin->initGroupIdx >= 0) {
++	char *name = cfg_get(SECTION, "initlayout", NULL);
++	if (name != NULL) {
++	    idxG = plugin->initGroupIdx;
++	    int idxL;
++	    for (idxL = 0; idxL < plugin->groups[idxG]->layoutNb; idxL++)
++		if (strcmp(name, plugin->groups[idxG]->layouts[idxL]->name) == 0) {
++		    plugin->initLayoutIdx = idxL;
++		    break;
++		}
++	    free(name);
++	}
++
++    }
++
++    if (plugin->initLayoutIdx < 0) {
++
++	if (plugin->initGroupIdx < 0)
++	    my_error("No valide 'initgroup' value found.");
++	else
++	    my_error("No valide 'initlayout' value found.");
++
++	my_error("Set to initgroup '%s' and initlayout '%s'.",
++		 plugin->groups[0]->name, plugin->groups[0]->layouts[0]->name);
++
++	plugin->initGroupIdx = 0;
++	plugin->initLayoutIdx = 0;
++    }
++
++    return 0;
++}
++
++
++static void my_init_late()
++{
++
++    int status = my_init_plugin();
++
++    if (status == 0) {
++#ifdef PLUGIN_MENU
++	if (!plugin_init_menu())
++#endif
++	    my_switch_layout(plugin->initGroupIdx, plugin->initLayoutIdx);
++    } else {
++	if (status < 0) {
++	    my_error("Error while initializing plugin.");
++	    my_error("Plugin will NOT work. Every call will return -1 (error).");
++	}
++	my_free_plugin();
++    }
++}
++
++
++static int my_plugin_not_active(RESULT ** result)
++{
++
++    static int errorShown = 0;
++    if (plugin == NULL) {
++
++	if (!errorShown) {
++	    errorShown = 1;
++	    my_error("Plugin not active but attempt of using it was detected.");
++	}
++	double error = -1;
++	SetResult(result, R_NUMBER, &error);
++	return 1;
++    }
++    return 0;
++}
++
++
++static int my_group_index_from_result(RESULT * rGroup)
++{
++
++    if (rGroup->type & R_NUMBER) {
++	int idx = ((int) rGroup->number) - 1;
++	if (idx + 1 != rGroup->number || idx < 0 || idx >= plugin->groupNb)
++	    return -1;
++	return (idx);
++    }
++
++    if (rGroup->type & R_STRING) {
++	int i;
++	for (i = 0; i < plugin->groupNb; i++)
++	    if (strcmp(rGroup->string, plugin->groups[i]->name) == 0)
++		return (i);
++    }
++
++    return -1;
++}
++
++/* not static: used by plugin menu*/
++void plugin_layout_layout(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double error = -1;
++
++    if (argc > 2) {
++	SetResult(&result, R_NUMBER, &error);
++	my_error("layout() requires 0-2 arguments.");
++	return;
++    }
++
++    if (argc == 0) {
++	double res = plugin->currentGroup->layoutIdx + 1;
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    int i;
++
++    if (argc == 1 || argc == 2) {
++
++	int grpIdx = -1;
++
++	if (argc == 1) {
++	    grpIdx = plugin->groupIdx;
++	} else {
++	    RESULT *rGroup = argv[0];
++	    grpIdx = my_group_index_from_result(rGroup);
++
++	    if (grpIdx < 0) {
++		SetResult(&result, R_NUMBER, &error);
++		my_error("layout(): Group '%s' does not exist.", R2S(rGroup));
++		return;
++	    }
++	}
++
++	RESULT *rLayout = argv[argc - 1];
++	int layIdx = -1;
++
++	if (rLayout->type & R_NUMBER) {
++	    int idx = ((int) rLayout->number) - 1;
++
++	    if (idx + 1 != rLayout->number || idx < 0 || idx >= plugin->groups[grpIdx]->layoutNb) {
++		SetResult(&result, R_NUMBER, &error);
++		my_error("layout(): Layout index %g does not exist in group # %d", rLayout->number, grpIdx + 1);
++		return;
++	    }
++	    layIdx = idx;
++	}
++
++	if (rLayout->type & R_STRING) {
++
++	    for (i = 0; i < plugin->groups[grpIdx]->layoutNb; i++)
++		if (strcmp(rLayout->string, plugin->groups[grpIdx]->layouts[i]->name) == 0) {
++		    layIdx = i;
++		    break;
++		}
++	    if (layIdx < 0) {
++		SetResult(&result, R_NUMBER, &error);
++		my_error("layout(): Layout '%s' does not exist in group '%s'.", rLayout->string,
++			 plugin->groups[grpIdx]->name);
++		return;
++	    }
++	}
++
++	error = my_switch_layout(grpIdx, layIdx);
++	SetResult(&result, R_NUMBER, &error);
++    }
++}
++
++
++static void plugin_layout_group(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double error = -1;
++
++    if (argc > 1) {
++	SetResult(&result, R_NUMBER, &error);
++	my_error("group() requires 0-1 arguments.");
++	return;
++    }
++
++    if (argc == 0) {
++	double res = plugin->groupIdx + 1;
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    if (argc == 1) {
++
++	RESULT *rGroup = argv[0];
++	int grpIdx = my_group_index_from_result(rGroup);
++
++	if (grpIdx < 0) {
++	    SetResult(&result, R_NUMBER, &error);
++	    my_error("group(): Group '%s' does not exist.", R2S(rGroup));
++	    return;
++	}
++
++	error = my_switch_layout(grpIdx, plugin->groups[grpIdx]->layoutIdx);
++	SetResult(&result, R_NUMBER, &error);
++    }
++}
++
++static void my_prevNextLayout_help(RESULT * result, RESULT * rLoop, int mode)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++
++    if ((rLoop->type & R_NUMBER) == 0) {
++	my_error("%s() requires 1 numeric argument.", (mode == 0) ? "prev" : "next");
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    int idxL = plugin->currentGroup->layoutIdx;
++    int nbL = plugin->currentGroup->layoutNb;
++    int idxG = plugin->groupIdx;
++
++    if (mode == 0) {
++	if (rLoop->number != 0 || idxL > 0)
++	    idxL = (idxL + nbL - 1) % nbL;
++    } else {
++	if (rLoop->number != 0 || idxL < nbL - 1)
++	    idxL = (idxL + 1) % nbL;
++    }
++
++    res = my_switch_layout(idxG, idxL);
++    SetResult(&result, R_NUMBER, &res);
++}
++
++static void plugin_layout_prev(RESULT * result, RESULT * rLoop)
++{
++    my_prevNextLayout_help(result, rLoop, 0);
++}
++
++static void plugin_layout_next(RESULT * result, RESULT * rLoop)
++{
++    error("next layout");
++
++    my_prevNextLayout_help(result, rLoop, 1);
++}
++
++
++static void my_prevNextGroup_help(RESULT * result, RESULT * rLoop, RESULT * rShowFirstLayout, int mode)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++
++    if ((rLoop->type & rShowFirstLayout->type & R_NUMBER) == 0) {
++	my_error("%sgroup() requires 2 numeric argument.", (mode == 0) ? "prev" : "next");
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    int idxL = plugin->currentGroup->layoutIdx;
++    int idxG = plugin->groupIdx;
++    int nbG = plugin->groupNb;
++
++    if (mode == 0) {
++	if (rLoop->number != 0 || idxG > 0)
++	    idxG = (idxG + nbG - 1) % nbG;
++    } else {
++	if (rLoop->number != 0 || idxG < nbG - 1)
++	    idxG = (idxG + 1) % nbG;
++    }
++
++    idxL = rShowFirstLayout->number != 0 ? 0 : plugin->groups[idxG]->layoutIdx;
++
++    res = my_switch_layout(idxG, idxL);
++    SetResult(&result, R_NUMBER, &res);
++}
++
++static void plugin_layout_prevgroup(RESULT * result, RESULT * rLoop, RESULT * rShowFirstLayout)
++{
++    my_prevNextGroup_help(result, rLoop, rShowFirstLayout, 0);
++}
++
++static void plugin_layout_nextgroup(RESULT * result, RESULT * rLoop, RESULT * rShowFirstLayout)
++{
++    my_prevNextGroup_help(result, rLoop, rShowFirstLayout, 1);
++}
++
++
++static void plugin_layout_groups(RESULT * result)
++{
++    if (my_plugin_not_active(&result))
++	return;
++
++    double d = plugin->groupNb;
++    SetResult(&result, R_NUMBER, &d);
++}
++
++
++static void plugin_layout_groupname(RESULT * result)
++{
++    if (my_plugin_not_active(&result))
++	return;
++
++    SetResult(&result, R_STRING, plugin->currentGroup->name);
++}
++
++
++static void plugin_layout_layouts(RESULT * result)
++{
++    if (my_plugin_not_active(&result))
++	return;
++
++    double d = plugin->currentGroup->layoutNb;
++    SetResult(&result, R_NUMBER, &d);
++}
++
++
++static void plugin_layout_layoutname(RESULT * result)
++{
++    if (my_plugin_not_active(&result))
++	return;
++
++    SetResult(&result, R_STRING, plugin->currentLayout->name);
++}
++
++
++
++static void my_action(RESULT * result, char *actionName)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    my_info("action: '%s'", actionName);
++
++    Action *firsts[] = { plugin->currentLayout->firstAction,
++	plugin->currentGroup->firstAction,
++	plugin->firstAction
++    };
++
++    double d = -1;
++    int i;
++
++    /* ignore onenter, onexit actions */
++    if (actionName != NULL && *actionName != 'o')
++	for (i = 0; i < 3; i++) {
++	    Action *first = firsts[i];
++
++	    if (action_trigger(first, actionName)) {
++		d = 0;
++		break;
++	    }
++	}
++    SetResult(&result, R_NUMBER, &d);
++}
++
++static void plugin_layout_trigger(RESULT * result, RESULT * rAction)
++{
++    my_action(result, R2S(rAction));
++}
++
++static void plugin_layout_confirm(RESULT * result)
++{
++    my_action(result, "confirm");
++}
++
++static void plugin_layout_cancel(RESULT * result)
++{
++    my_action(result, "cancel");
++}
++
++static void plugin_layout_left(RESULT * result)
++{
++    my_action(result, "left");
++}
++
++static void plugin_layout_right(RESULT * result)
++{
++    my_action(result, "right");
++}
++
++static void plugin_layout_up(RESULT * result)
++{
++    my_action(result, "up");
++}
++
++static void plugin_layout_down(RESULT * result)
++{
++    my_action(result, "down");
++}
++
++
++int plugin_init_layout(void)
++{
++
++    timer_add_late(my_init_late, NULL, 0, 1);
++
++    AddFunction("layout::layoutname", 0, plugin_layout_layoutname);
++    AddFunction("layout::layout", -1, plugin_layout_layout);
++    AddFunction("layout::layouts", 0, plugin_layout_layouts);
++    AddFunction("layout::prev", 1, plugin_layout_prev);
++    AddFunction("layout::next", 1, plugin_layout_next);
++
++    AddFunction("layout::group", -1, plugin_layout_group);
++    AddFunction("layout::groupname", 0, plugin_layout_groupname);
++    AddFunction("layout::groups", 0, plugin_layout_groups);
++    AddFunction("layout::prevgroup", 2, plugin_layout_prevgroup);
++    AddFunction("layout::nextgroup", 2, plugin_layout_nextgroup);
++
++    AddFunction("layout::trigger", 1, plugin_layout_trigger);
++    AddFunction("layout::confirm", 0, plugin_layout_confirm);
++    AddFunction("layout::cancel", 0, plugin_layout_cancel);
++    AddFunction("layout::left", 0, plugin_layout_left);
++    AddFunction("layout::right", 0, plugin_layout_right);
++    AddFunction("layout::up", 0, plugin_layout_up);
++    AddFunction("layout::down", 0, plugin_layout_down);
++
++    return 0;
++}
++
++
++void plugin_exit_layout(void)
++{
++    my_free_plugin();
++}

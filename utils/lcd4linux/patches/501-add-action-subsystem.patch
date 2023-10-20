@@ -1,0 +1,239 @@
+From ef5f4f621795681a64f83050cc2c48327ad6990f Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:38:55 +0200
+Subject: [PATCH] action: add action subsystem
+
+Actions are used by the plugins Layout and Menu and by the Futaba driver.
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ action.c | 172 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ action.h |  46 +++++++++++++++
+ 2 files changed, 218 insertions(+)
+ create mode 100644 action.c
+ create mode 100644 action.h
+
+--- /dev/null
++++ b/action.c
+@@ -0,0 +1,172 @@
++/* $Id$
++ * $URL$
++ *
++ * Copyright (C) 2015 Marcus Menzel <codingmax@gmx-topmail.de>
++ *
++ * This file is part of LCD4Linux.
++ *
++ * LCD4Linux is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * LCD4Linux is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++
++#include "debug.h"
++#include "cfg.h"
++#include "action.h"
++
++#ifdef WITH_DMALLOC
++#include <dmalloc.h>
++#endif
++
++/* Actions are stored as linked list, referenced by its first element.
++ * An action has a name and a property. 
++ * The name should be unique within the action list because it is used
++ * to find an action within a action list to evaluate its property.
++ * 
++ * Action properties are expressions that change variables or call 
++ * plugin functions.
++ *  
++ */
++
++
++
++void action_free_all(Action * firstAction)
++{
++    Action *action;
++    Action *nextAction;
++
++    for (action = firstAction; action != NULL; action = nextAction) {
++	free(action->name);
++	property_free(action->property);
++	nextAction = action->next;
++	free(action);
++    }
++}
++
++static Action *action_read(const char *prefix, const char *actionName)
++{
++
++    if (prefix == NULL)
++	return NULL;
++
++    char *tmp = cfg_get_raw(prefix, actionName, NULL);
++    if (tmp == NULL)
++	return NULL;
++
++    PROPERTY *prop = malloc(sizeof(PROPERTY));
++    if (prop == NULL) {
++	error("action_read() couldn't allocate memory.");
++	return NULL;
++    }
++    prop->valid = 1;
++    prop->expression = tmp;	/* NO strdup see property_free() */
++    prop->compiled = NULL;
++    prop->result.string = NULL;
++    DelResult(&prop->result);
++    prop->name = cfg_make_str("%s.%s", prefix, actionName);
++    if (prop->name == NULL) {
++	property_free(prop);
++	return NULL;
++    }
++
++    Action *action = malloc(sizeof(Action));
++    if (action == NULL) {
++	error("action_read() couldn't allocate memory.");
++	property_free(prop);
++	return NULL;
++    }
++    action->name = strdup(actionName);
++    action->property = prop;
++    action->next = NULL;
++    return action;
++}
++
++
++void action_init_multiple(const char *prefix, const char **names, Action ** firstActionPtr)
++{
++
++    Action *prevAction = NULL;
++
++    for (; *names != NULL; names++) {
++
++	Action *action = action_read(prefix, *names);
++
++	if (action == NULL)
++	    continue;
++	if (prevAction == NULL)
++	    *firstActionPtr = action;
++	else
++	    prevAction->next = action;
++
++	Compile(action->property->expression, &action->property->compiled);
++	prevAction = action;
++    }
++}
++
++
++void action_init_default(const char *prefix, Action ** firstActionPtr)
++{
++
++    const int NUMBERED_ACTIONS = 20;
++    const int MAX_STRING_SIZE = 9;
++
++
++    const char *names[8 + NUMBERED_ACTIONS + 1];
++
++    names[8 + NUMBERED_ACTIONS] = NULL;
++    const char *namedAction[] = { "onenter", "onexit", "confirm", "cancel",
++	"up", "down", "left", "right"
++    };
++
++    int i;
++    for (i = 0; i < 8; i++)
++	names[i] = namedAction[i];
++
++    char buffer[MAX_STRING_SIZE * NUMBERED_ACTIONS];
++
++    for (i = 0; i < NUMBERED_ACTIONS; i++) {
++
++	char *str = buffer + MAX_STRING_SIZE * i;
++	if (sprintf(str, "action%d", i + 1) < 0) {
++	    error("action_init_default() couldn't set string.");
++	    names[8 + i] = NULL;
++	} else {
++	    names[8 + i] = str;
++	}
++    }
++
++    action_init_multiple(prefix, names, firstActionPtr);
++}
++
++
++int action_trigger(Action * firstAction, const char *name)
++{
++
++    Action *action;
++    for (action = firstAction; action != NULL; action = action->next) {
++	if (strcmp(action->name, name) == 0) {
++	    if (action->property == NULL || action->property->compiled == NULL) {
++
++		return 0;
++	    } else {
++		property_eval(action->property);
++		return 1;
++	    }
++	}
++    }
++    return 0;
++}
+--- /dev/null
++++ b/action.h
+@@ -0,0 +1,46 @@
++/* $Id$
++ * $URL$
++ *
++ * Copyright (C) 2015 Marcus Menzel <codingmax@gmx-topmail.de>
++ *
++ * This file is part of LCD4Linux.
++ *
++ * LCD4Linux is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * LCD4Linux is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++
++#ifndef _ACTION_H_
++#define _ACTION_H_
++
++
++#include "property.h"
++
++typedef struct Action Action;
++
++typedef struct Action {
++    char *name;
++    PROPERTY *property;
++    Action *next;
++} Action;
++
++void action_free_all(Action * firstAction);
++void action_init_default(const char *confPrefix, Action ** firstActionPtr);
++void action_init_multiple(const char *prefix, const char **names, Action ** firstActionPtr);
++int action_trigger(Action * firstAction, const char *name);
++
++
++
++#endif

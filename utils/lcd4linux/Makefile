@@ -1,11 +1,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lcd4linux
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/TangoCash/lcd4linux.git
-PKG_SOURCE_DATE:=2023-04-01
+PKG_SOURCE_DATE:=2023-10-20
 PKG_SOURCE_VERSION:=f8f7307fdba97adfb9561881ab281495c28ba86e
 PKG_MIRROR_HASH:=a8aad10ac90e1b10ab4bedd6330a0189b3735ff0ee8c4592b185edbce73c4a32
 
@@ -65,6 +65,7 @@ LCD4LINUX_DRIVERS:= \
 	SimpleLCD \
 	st2205 \
 	T6963 \
+	TEW673GRU \
 	TeakLCM \
 	Trefon \
 	USBHUB \

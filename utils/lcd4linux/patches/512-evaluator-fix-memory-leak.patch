@@ -1,0 +1,24 @@
+From 5a1ddbd899d737acf1591998c540f6258c59afd2 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:12:49 +0200
+Subject: [PATCH] evaluator: fix memory leak
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ evaluator.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/evaluator.c
++++ b/evaluator.c
+@@ -456,7 +456,10 @@ int SetVariableString(const char *name,
+ 
+     SetResult(&rp, R_STRING, value);
+ 
+-    return SetVariable(name, rp);
++    int r = SetVariable(name, rp);
++    free(rp->string);
++
++    return r;
+ }
+ 
+ 

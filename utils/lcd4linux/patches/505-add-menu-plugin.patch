@@ -1,0 +1,998 @@
+From 120b816d827afd4ffa3347bd32a7d18bfd108e9f Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:43:47 +0200
+Subject: [PATCH] plugin: add menu plugin
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ plugin_menu.c | 984 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 984 insertions(+)
+ create mode 100644 plugin_menu.c
+
+--- /dev/null
++++ b/plugin_menu.c
+@@ -0,0 +1,984 @@
++/* $Id$
++ * $URL$
++ *
++ * This plugin adds menu control to lcd4linux.
++ * 
++ * https://lcd4linux.bulix.org/wiki/plugin_menu
++ *
++ * Copyright (C) 2003 Michael Reinelt <michael@reinelt.co.at>
++ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The LCD4Linux Team <lcd4linux-devel@users.sourceforge.net>
++ * Copyright (C) 2015 Marcus Menzel <codingmax@gmx-topmail.de>
++ *
++ * This file is part of LCD4Linux.
++ *
++ * LCD4Linux is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * LCD4Linux is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <ctype.h>
++
++#include "config.h"
++#include "debug.h"
++#include "plugin.h"
++#include "cfg.h"
++#include "action.h"
++#include "timer.h"
++
++#ifdef WITH_DMALLOC
++#include <dmalloc.h>
++#endif
++
++#ifdef PLUGIN_LAYOUT
++extern void plugin_layout_layout(RESULT * result, int argc, RESULT * argv[]);
++#endif
++
++#define SECTION "Plugin:Menu"
++#define PLUGIN "Menu"
++
++#define MAX_MENUS 1000
++#define MAX_ITEMS 1000
++
++/* copied from plugin_layout.c */
++#define my_debug(args...) message (2, __FILE__ ": " args)
++#define my_info(args...)  message (1, "Info  Plugin '" PLUGIN "': " args)
++#define my_error(args...) message (0, "ERROR Plugin '" PLUGIN "': " args)
++#define my_noMemory() message (0, "ERROR Couldn't allocate new memory (%s:%d).",PLUGIN, __LINE__)
++
++
++typedef struct MenuItem {
++    char *name;
++    RESULT *layout;
++    Action *firstAction;
++} MenuItem;
++
++
++typedef struct Menu {
++    char *name;
++    RESULT *layoutgroup;
++    Action *firstAction;
++
++    MenuItem **items;
++    int itemNb;
++    int itemIdx;
++} Menu;
++
++
++typedef struct Plugin {
++    Menu **menus;
++    int menuNb;
++    int menuIdx;
++    int blink;
++    int blinkState;
++    Action *firstAction;
++} Plugin;
++
++
++static Plugin *plugin = NULL;
++
++
++static int my_plugin_not_active(RESULT ** result)
++{
++
++    static int errorShown = 0;
++    if (plugin == NULL) {
++
++	if (!errorShown) {
++	    errorShown = 1;
++	    my_error("Plugin not active but attempt of using it was detected.");
++	}
++	double error = -1;
++	SetResult(result, R_NUMBER, &error);
++	return 1;
++    }
++    return 0;
++}
++
++
++static RESULT *my_get_string_result(char *str)
++{
++
++    if (str == NULL || *str == '\0')
++	return NULL;
++
++    RESULT *result = malloc(sizeof(RESULT));
++    if (result == NULL) {
++	my_noMemory();
++	return NULL;
++    }
++    result->string = NULL;
++    DelResult(result);
++
++    result->type = R_STRING;
++    result->string = strdup(str);
++    result->size = strlen(result->string) + 1;
++
++    return result;
++}
++
++
++static void my_free_result(RESULT * res)
++{
++    if (res == NULL)
++	return;
++    free(res->string);
++    free(res);
++}
++
++
++static void my_free_item(MenuItem * item)
++{
++
++    if (item == NULL)
++	return;
++    free(item->name);
++    my_free_result(item->layout);
++    action_free_all(item->firstAction);
++    free(item);
++}
++
++static void my_free_menu(Menu * menu)
++{
++
++    if (menu == NULL)
++	return;
++    free(menu->name);
++    my_free_result(menu->layoutgroup);
++    action_free_all(menu->firstAction);
++    if (menu->items != NULL) {
++	int i;
++	for (i = 0; i < menu->itemNb; i++)
++	    my_free_item(menu->items[i]);
++	free(menu->items);
++    }
++    free(menu);
++}
++
++
++static void my_free_plugin()
++{
++
++    if (plugin == NULL)
++	return;
++
++    action_free_all(plugin->firstAction);
++
++    if (plugin->menus != NULL) {
++	int i;
++	for (i = 0; i < plugin->menuNb; i++)
++	    my_free_menu(plugin->menus[i]);
++	free(plugin->menus);
++    }
++    free(plugin);
++    plugin = NULL;
++}
++
++
++static int my_init_item(int idxM, int idxI)
++{
++
++    Menu *menu = plugin->menus[idxM];
++    MenuItem *item = malloc(sizeof(MenuItem));
++
++    if (item == NULL) {
++	my_noMemory();
++	return -1;
++    }
++    menu->items[idxI] = item;
++
++    item->name = NULL;
++    item->layout = NULL;
++    item->firstAction = NULL;
++
++    char *key = cfg_make_str("Menu%d.Item%d.name", idxM + 1, idxI + 1);
++    char *dfltName = cfg_make_str("Item%d", idxI + 1);
++    char *name = cfg_get(SECTION, key, dfltName);
++    free(key);
++    free(dfltName);
++
++    if (name == NULL || *name == '\0') {
++	free(name);
++	my_error("Item %d of menu %d has no valide name.", idxI + 1, idxM + 1);
++	return -1;
++    }
++
++    int i;
++    for (i = 0; i < idxI; i++) {
++	if (strcmp(menu->items[i]->name, name) == 0) {
++	    my_error("Item name '%s' is not unique in menu #%d ('%s').", name, idxM + 1, menu->name);
++	    free(name);
++	    return -1;
++	}
++    }
++
++    item->name = name;
++    my_info("Menu%d.Item%d.name = '%s'.", idxM + 1, idxI + 1, name);
++
++    key = cfg_make_str("Menu%d.Item%d.layout", idxM + 1, idxI + 1);
++    char *layoutName = cfg_get(SECTION, key, NULL);
++    free(key);
++
++    if (layoutName == NULL || *layoutName == '\0') {
++	if (idxI == 0) {
++	    my_error("Item %d of menu %d has no valide layout.", idxM + 1, idxI + 1);
++	    free(layoutName);
++	    return -1;
++	} else {
++	    free(layoutName);
++	    layoutName = strdup(menu->items[idxI - 1]->layout->string);
++	}
++
++    }
++
++    RESULT *layout = my_get_string_result(layoutName);
++    free(layoutName);
++
++    if (layout == NULL) {
++	my_error("Can't create layout for item %d of menu %d.", idxI + 1, idxM + 1);
++	return -1;
++    }
++    item->layout = layout;
++    my_info("Menu%d.Item%d.layout = '%s'.", idxM + 1, idxI + 1, layout->string);
++
++    char *prefix = cfg_make_str("%s.Menu%d.Item%d", SECTION, idxM + 1, idxI + 1);
++    action_init_default(prefix, &item->firstAction);
++    free(prefix);
++
++    return 0;
++}
++
++static int my_init_menu(int idxM)
++{
++
++    Menu *menu = malloc(sizeof(Menu));
++    if (menu == NULL) {
++	my_noMemory();
++	return -1;
++    }
++    plugin->menus[idxM] = menu;
++
++    menu->name = NULL;
++    menu->layoutgroup = NULL;
++    menu->firstAction = NULL;
++    menu->items = NULL;
++    menu->itemNb = 0;
++    menu->itemIdx = 0;
++
++    int i, idxI;
++
++    char *key = cfg_make_str("Menu%d.name", idxM + 1);
++    char *dfltName = cfg_make_str("Menu%d", idxM + 1);
++    char *name = cfg_get(SECTION, key, dfltName);
++    free(key);
++    free(dfltName);
++
++    if (name == NULL || *name == '\0') {
++	free(name);
++	my_error("Menu %d has no valide name.", idxM + 1);
++	return -1;
++    }
++
++    for (i = 0; i < idxM; i++) {
++	if (strcmp(plugin->menus[i]->name, name) == 0) {
++	    my_error("Menu name '%s' is not unique.", name);
++	    free(name);
++	    return -1;
++	}
++    }
++    menu->name = name;
++    my_info("Menu%d.name = '%s'.", idxM + 1, name);
++
++    key = cfg_make_str("Menu%d.layoutgroup", idxM + 1);
++    char *groupName = cfg_get(SECTION, key, NULL);
++    free(key);
++
++    if (groupName == NULL || *groupName == '\0') {
++	my_error("Menu %d has no valide layout group.", idxM + 1);
++	free(groupName);
++	return -1;
++    }
++
++    RESULT *group = my_get_string_result(groupName);
++    free(groupName);
++
++    if (group == NULL) {
++	my_error("Can't create layoutgroup for menu %d.", idxM + 1);
++	return -1;
++    }
++    menu->layoutgroup = group;
++
++    char *prefix = cfg_make_str("%s.Menu%d.Item", SECTION, idxM + 1);
++    int itemNb = cfg_count(prefix, MAX_ITEMS);
++    free(prefix);
++
++    if (itemNb <= 0) {
++	my_error("No items found in menu '%s'.", menu->name);
++	return -1;
++    }
++    menu->itemNb = itemNb;
++    menu->itemIdx = 0;
++    my_info("%d items found in menu '%s'.", menu->itemNb, menu->name);
++
++    menu->items = malloc(menu->itemNb * sizeof(MenuItem *));
++    if (menu->items == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    for (idxI = 0; idxI < menu->itemNb; idxI++)
++	menu->items[idxI] = NULL;
++
++    for (idxI = 0; idxI < menu->itemNb; idxI++)
++	if (my_init_item(idxM, idxI) < 0)
++	    return -1;
++
++    prefix = cfg_make_str("%s.Menu%d", SECTION, idxM + 1);
++    action_init_default(prefix, &menu->firstAction);
++    free(prefix);
++
++    return 0;
++}
++
++
++static int my_init_plugin()
++{
++
++    int active = 0;
++    if (cfg_number(SECTION, "active", 0, 0, 1, &active) != 1) {
++	my_error("No valide 'active' value. Set to inactive.");
++	return -1;
++    }
++
++    if (!active) {
++	my_info("Set inactive.");
++	return 1;
++    } else
++	my_info("Try to init.");
++
++
++    plugin = malloc(sizeof(Plugin));
++    if (plugin == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    plugin->firstAction = NULL;
++    plugin->menus = NULL;
++    plugin->menuNb = 0;
++    plugin->menuIdx = -1;
++    plugin->blink = 200;
++    plugin->blinkState = 1;
++
++    if (cfg_number(SECTION, "blink", 0, 0, 1000, &plugin->blink) != 1) {
++	my_info("No valide 'blink' value. Set to default (200).");
++	plugin->blink = 200;
++    }
++
++    int m;
++
++    char *prefix = cfg_make_str("%s.Menu", SECTION);
++    int menuNb = cfg_count(prefix, MAX_MENUS);
++    free(prefix);
++
++    if (menuNb <= 0) {
++	my_error("No menus found.");
++	return -1;
++    }
++
++    plugin->menuNb = menuNb;
++    my_info("%d menus found.", plugin->menuNb);
++
++    plugin->menus = malloc(plugin->menuNb * sizeof(Menu *));
++
++    if (plugin->menus == NULL) {
++	my_noMemory();
++	return -1;
++    }
++
++    for (m = 0; m < plugin->menuNb; m++)
++	plugin->menus[m] = NULL;
++
++    for (m = 0; m < plugin->menuNb; m++)
++	if (my_init_menu(m) < 0)
++	    return -1;
++
++    char *initmenu = cfg_get(SECTION, "initmenu", NULL);
++
++    if (initmenu != NULL) {
++	for (m = 0; m < plugin->menuNb; m++)
++	    if (strcmp(initmenu, plugin->menus[m]->name) == 0) {
++		plugin->menuIdx = m;
++		break;
++	    }
++	free(initmenu);
++    }
++
++    action_init_default(SECTION, &plugin->firstAction);
++
++    return 0;
++}
++
++
++static int my_switch_menu(int idxM, int idxI)
++{
++
++
++    if (idxM < -1 || idxM >= plugin->menuNb) {
++	my_error("Try to switch to menu %d. Does not exist. ", idxM + 1);
++	return -1;
++    }
++
++    int oldIdxM = plugin->menuIdx;
++    Menu *oldMenu = oldIdxM < 0 ? NULL : plugin->menus[oldIdxM];
++    Menu *newMenu = idxM < 0 ? NULL : plugin->menus[idxM];
++
++    if ((idxM >= 0 && (idxI < 0 || idxI >= newMenu->itemNb))
++	|| (idxM == -1 && idxI != -1)) {
++
++	my_error("Try to switch to item %d of menu %d. Does not exist. ", idxI + 1, idxM + 1);
++	return -1;
++    }
++
++    int oldIdxI = oldMenu == NULL ? -1 : oldMenu->itemIdx;
++    MenuItem *oldItem = oldIdxI < 0 ? NULL : oldMenu->items[oldIdxI];
++    MenuItem *newItem = idxI < 0 ? NULL : newMenu->items[idxI];
++
++    if (oldItem != newItem) {
++
++	if (oldItem != NULL && oldItem != newItem)
++	    action_trigger(oldItem->firstAction, "onexit");
++
++	if (oldMenu != NULL && oldMenu != newMenu)
++	    action_trigger(oldMenu->firstAction, "onexit");
++
++	plugin->menuIdx = idxM;
++
++
++#ifdef PLUGIN_LAYOUT
++	if (newMenu != NULL && newItem != NULL) {
++
++	    newMenu->itemIdx = idxI;
++
++	    RESULT *argv[] = { newMenu->layoutgroup, newItem->layout };
++	    RESULT *rRes = malloc(sizeof(RESULT));
++	    rRes->string = NULL;
++	    plugin_layout_layout(rRes, 2, argv);
++	    if (rRes->number < 0) {
++		my_error("Couldn't switch layout.");
++		my_free_result(rRes);
++		return -1;
++	    }
++	    my_free_result(rRes);
++	}
++#endif
++
++	if (newMenu != NULL && oldMenu != newMenu)
++	    action_trigger(newMenu->firstAction, "onenter");
++	if (newItem != NULL && oldItem != newItem)
++	    action_trigger(newItem->firstAction, "onenter");
++    }
++    return 0;
++}
++
++
++static void my_blink_callback(void *null)
++{
++    plugin->blinkState = 1 - plugin->blinkState;
++}
++
++
++static void my_init()
++{
++    int status = my_init_plugin();
++
++    if (status == 0) {
++	if (plugin->blink != 0)
++	    timer_add_late(my_blink_callback, NULL, plugin->blink, 0);
++
++
++	int idxM = plugin->menuIdx;
++	plugin->menuIdx = -1;
++	my_switch_menu(idxM, idxM < 0 ? -1 : 0);
++
++    } else {
++	if (status < 0) {
++	    my_error("Error while initializing plugin.");
++	    my_error("Plugin will NOT work. Every call will return -1 (error).");
++	}
++	my_free_plugin();
++    }
++}
++
++
++static void my_prevNextItem_help(RESULT * result, RESULT * rLoop, int mode)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    Menu *menu = plugin->menus[plugin->menuIdx];
++
++    double res = -1;
++
++    if ((rLoop->type & R_NUMBER) == 0) {
++	my_error("%s() requires 1 numeric argument.", (mode == 0) ? "prev" : "next");
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    int idxI = menu->itemIdx;
++    int nbI = menu->itemNb;
++
++    if (mode == 0) {
++	if (rLoop->number == 1 || idxI > 0)
++	    idxI = (idxI - 1 + nbI) % nbI;
++    }
++
++    if (mode == 1) {
++	if (rLoop->number == 1 || idxI < nbI - 1)
++	    idxI = (idxI + 1) % nbI;
++    }
++
++    res = my_switch_menu(plugin->menuIdx, idxI);
++
++    SetResult(&result, R_NUMBER, &res);
++}
++
++static void plugin_menu_prev(RESULT * result, RESULT * rLoop)
++{
++    my_prevNextItem_help(result, rLoop, 0);
++}
++
++static void plugin_menu_next(RESULT * result, RESULT * rLoop)
++{
++    my_prevNextItem_help(result, rLoop, 1);
++}
++
++
++static void my_action(RESULT * result, char *actionName)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    my_info("action: '%s'", actionName);
++
++    Action *firsts[] = { NULL, NULL, plugin->firstAction };
++
++    if (plugin->menuIdx >= 0) {
++	Menu *menu = plugin->menus[plugin->menuIdx];
++	MenuItem *item = menu->items[menu->itemIdx];
++	firsts[0] = item->firstAction;
++	firsts[1] = menu->firstAction;
++    }
++
++    double d = -1;
++    int i;
++
++    /* ignore onenter, onexit actions */
++    if (actionName != NULL && *actionName != 'o')
++	for (i = 0; i < 3; i++) {
++	    Action *first = firsts[i];
++
++	    if (action_trigger(first, actionName)) {
++		d = 0;
++		break;
++	    }
++	}
++    SetResult(&result, R_NUMBER, &d);
++}
++
++static void plugin_menu_trigger(RESULT * result, RESULT * rAction)
++{
++    my_action(result, R2S(rAction));
++}
++
++static void plugin_menu_confirm(RESULT * result)
++{
++    my_action(result, "confirm");
++}
++
++static void plugin_menu_cancel(RESULT * result)
++{
++    my_action(result, "cancel");
++}
++
++static void plugin_menu_left(RESULT * result)
++{
++    my_action(result, "left");
++}
++
++static void plugin_menu_right(RESULT * result)
++{
++    my_action(result, "right");
++}
++
++static void plugin_menu_up(RESULT * result)
++{
++    my_action(result, "up");
++}
++
++static void plugin_menu_down(RESULT * result)
++{
++    my_action(result, "down");
++}
++
++
++static int my_result_to_menu_index(RESULT * result, char *prefix)
++{
++
++    int i, idxM = -1;
++
++    if (result->type & R_STRING) {
++	for (i = 0; i < plugin->menuNb; i++)
++	    if (strcmp(result->string, plugin->menus[i]->name) == 0) {
++		idxM = i;
++		break;
++	    }
++    }
++
++    if (idxM < 0 && (result->type & R_NUMBER)) {
++	int idx = ((int) result->number) - 1;
++
++	if (idx + 1 == result->number && idx >= 0 && idx < plugin->menuNb)
++	    idxM = idx;
++
++    }
++
++    if (idxM < 0)
++	my_error("%s: Menu %s does not exist.", prefix, R2S(result));
++
++    return idxM;
++}
++
++
++static int my_result_to_item_index(RESULT * result, int menuIdx, char *prefix)
++{
++
++    if (menuIdx < 0 || menuIdx >= plugin->menuNb)
++	return -1;
++
++    int i, idxI = -1;
++
++    Menu *menu = plugin->menus[menuIdx];
++
++    if (result->type & R_STRING) {
++
++	for (i = 0; i < menu->itemNb; i++)
++	    if (strcmp(result->string, menu->items[i]->name) == 0) {
++		idxI = i;
++		break;
++	    }
++    }
++
++    if (idxI < 0 && (result->type & R_NUMBER)) {
++	int idx = ((int) result->number) - 1;
++
++	if (idx + 1 == result->number && idx >= 0 && idx < menu->itemNb)
++	    idxI = idx;
++    }
++    if (idxI < 0 && prefix != NULL)
++	my_error("%s: Item %s does not exist in menu #%d.", prefix, R2S(result), menuIdx + 1);
++
++    return idxI;
++}
++
++
++static void plugin_menu_none(RESULT * result)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = my_switch_menu(-1, -1);
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++static void plugin_menu_menu(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double error = -1;
++
++    if (argc < 0 || argc > 1) {
++	my_error("menu() takes 0-1 arguments - given : %d", argc);
++	SetResult(&result, R_NUMBER, &error);
++	return;
++    }
++
++    if (argc == 0) {
++	double res = plugin->menuIdx + 1;
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    if (argc > 0) {
++
++	int idxM = my_result_to_menu_index(argv[0], "menu()");
++	if (idxM < 0) {
++	    SetResult(&result, R_NUMBER, &error);
++	    return;
++	}
++
++	int idxI = plugin->menus[idxM]->itemIdx;
++
++	error = my_switch_menu(idxM, idxI);
++	SetResult(&result, R_NUMBER, &error);
++    }
++
++    SetResult(&result, R_NUMBER, &error);
++}
++
++
++static void plugin_menu_item(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = -1;
++
++    if (argc < 0 || argc > 2) {
++	my_error("item() takes 0-2 arguments - given : %d", argc);
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    if (argc == 0) {
++	if (plugin->menuIdx >= 0)
++	    res = plugin->menus[plugin->menuIdx]->itemIdx + 1;
++	else
++	    res = 0;
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    res = -1;
++    int idxM = -1;
++    if (argc == 1)
++	idxM = plugin->menuIdx;
++    else
++	idxM = my_result_to_menu_index(argv[0], "item()");
++
++    if (idxM < 0) {
++	SetResult(&result, R_NUMBER, &res);
++	return;
++    }
++
++    int idxI = my_result_to_item_index(argv[argc - 1], idxM, "item()");
++    if (idxI >= 0)
++	res = my_switch_menu(idxM, idxI);
++
++    SetResult(&result, R_NUMBER, &res);
++}
++
++static void plugin_menu_menuname(RESULT * result)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    SetResult(&result, R_STRING, plugin->menus[plugin->menuIdx]->name);
++}
++
++
++static void plugin_menu_itemname(RESULT * result)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    Menu *menu = plugin->menus[plugin->menuIdx];
++    int idxI = menu->itemIdx;
++    SetResult(&result, R_STRING, menu->items[idxI]->name);
++}
++
++
++static void plugin_menu_menus(RESULT * result)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double d = plugin->menuNb;
++    SetResult(&result, R_NUMBER, &d);
++}
++
++
++static void plugin_menu_items(RESULT * result)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double d = plugin->menus[plugin->menuIdx]->itemNb;
++    SetResult(&result, R_NUMBER, &d);
++}
++
++
++static int my_check_help(RESULT * rMenu, RESULT * rItem)
++{
++
++    int idxM = my_result_to_menu_index(rMenu, NULL);
++
++    if (plugin->menuIdx < 0)
++	return (idxM == -1) ? 1 : 0;
++
++    int idxI = my_result_to_item_index(rItem, idxM, NULL);
++
++    if (idxM != plugin->menuIdx || idxI != plugin->menus[plugin->menuIdx]->itemIdx) {
++
++	return 0;
++    }
++    return 1;
++}
++
++
++static void plugin_menu_check(RESULT * result, RESULT * rMenu, RESULT * rItem)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double res = my_check_help(rMenu, rItem);
++    SetResult(&result, R_NUMBER, &res);
++}
++
++
++static void my_set_result(RESULT * result, RESULT * rVal)
++{
++    if (rVal->type & R_STRING)
++	SetResult(&result, R_STRING, rVal->string);
++    else
++	SetResult(&result, R_NUMBER, &rVal->number);
++}
++
++static void plugin_menu_if(RESULT * result, RESULT * rMenu, RESULT * rItem, RESULT * rIf, RESULT * rElse)
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    RESULT *res = my_check_help(rMenu, rItem) ? rIf : rElse;
++
++    if (res == NULL || res->type == 0) {
++	double d = -1;
++	SetResult(&result, R_NUMBER, &d);
++    }
++
++    my_set_result(result, res);
++}
++
++
++static void plugin_menu_blink(RESULT * result, int argc, RESULT * argv[])
++{
++
++    if (my_plugin_not_active(&result))
++	return;
++
++    double error = -1;
++
++    if (argc < 3 || argc > 4) {
++	my_error("blink() takes 3-4 arguments - given : %d", argc);
++	SetResult(&result, R_NUMBER, &error);
++	return;
++    }
++
++    RESULT *rMenu = argv[0];
++    RESULT *rItem = argv[1];
++    RESULT *rValIf = argv[2];
++    RESULT *rValElse = argv[argc - 1];
++
++    if (my_check_help(rMenu, rItem)) {
++	if (plugin->blinkState == 0) {
++	    /* keep string length constant otherwise text will jump
++	     * if prefix blinks */
++	    int len = strlen(R2S(rValIf)) + 1;
++	    char blanks[len];
++	    memset(blanks, ' ', len - 1);
++	    blanks[len - 1] = '\0';
++	    SetResult(&result, R_STRING, blanks);
++	} else {
++	    my_set_result(result, rValIf);
++	}
++    } else {
++	my_set_result(result, rValElse);
++    }
++}
++
++
++int plugin_init_menu(void)
++{
++
++#ifndef PLUGIN_LAYOUT
++    my_error("lcd4linux was made without plugin layout. Plugin menu won't work.");
++#endif
++
++    static int calls = 0;
++    calls++;
++
++    /* normal init call */
++    if (calls == 1) {
++	AddFunction("menu::item", -1, plugin_menu_item);
++	AddFunction("menu::items", 0, plugin_menu_items);
++	AddFunction("menu::itemname", 0, plugin_menu_itemname);
++	AddFunction("menu::prev", 1, plugin_menu_prev);
++	AddFunction("menu::next", 1, plugin_menu_next);
++
++	AddFunction("menu::none", 0, plugin_menu_none);
++	AddFunction("menu::menu", -1, plugin_menu_menu);
++	AddFunction("menu::menus", 0, plugin_menu_menus);
++	AddFunction("menu::menuname", 0, plugin_menu_menuname);
++
++	AddFunction("menu::check", 2, plugin_menu_check);
++	AddFunction("menu::if", 4, plugin_menu_if);
++	AddFunction("menu::blink", -1, plugin_menu_blink);
++
++	AddFunction("menu::trigger", 1, plugin_menu_trigger);
++	AddFunction("menu::confirm", 0, plugin_menu_confirm);
++	AddFunction("menu::cancel", 0, plugin_menu_cancel);
++	AddFunction("menu::left", 0, plugin_menu_left);
++	AddFunction("menu::right", 0, plugin_menu_right);
++	AddFunction("menu::up", 0, plugin_menu_up);
++	AddFunction("menu::down", 0, plugin_menu_down);
++    }
++
++    /* called by plugin layout after its init */
++    if (calls == 2) {
++	my_init();
++	if (plugin != NULL && plugin->menuIdx >= 0)
++	    return 1;
++	else
++	    return 0;
++    }
++
++    if (calls > 2) {
++	my_error("Something unexpected is going on: plugin_init_menu is called more than two times.");
++    }
++
++    return 0;
++}
++
++void plugin_exit_menu(void)
++{
++    timer_remove(my_blink_callback, NULL);
++    my_free_plugin();
++    plugin = NULL;
++}

@@ -1,0 +1,21 @@
+From 0b83bb3a81e7e7f5c0aa1daa6f5b9abca538fd47 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 14:43:15 +0200
+Subject: [PATCH] timer.h: fix include
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ timer.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/timer.h
++++ b/timer.h
+@@ -31,7 +31,7 @@
+ #define TIMER_ACTIVE  1
+ #define TIMER_INACTIVE  0
+ 
+-#include <time.h>
++#include <sys/time.h>
+ 
+ int timer_add(void (*callback) (void *data), void *data, const int interval, const int one_shot);
+ 

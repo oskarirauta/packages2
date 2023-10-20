@@ -1,0 +1,23 @@
+From 8613051303c5a27d53f8d70e38c650cce95513d1 Mon Sep 17 00:00:00 2001
+From: Florian Eckert <fe@dev.tdt.de>
+Date: Fri, 12 Jul 2019 13:57:36 +0200
+Subject: [PATCH] widget_image: remove static
+
+widget_image_update was set non static to be useable in the plugin_layout
+
+Signed-off-by: Florian Eckert <fe@dev.tdt.de>
+---
+ widget_image.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/widget_image.c
++++ b/widget_image.c
+@@ -325,7 +325,7 @@ static void widget_image_render(const ch
+ }
+ 
+ 
+-static void widget_image_update(void *Self)
++void widget_image_update(void *Self)
+ {
+ 	WIDGET *W = (WIDGET *) Self;
+ 	WIDGET_IMAGE *Image = W->data;
