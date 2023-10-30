@@ -6,7 +6,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/ubus-bm/releases/download/$(PKG_VERSION)/
-PKG_HASH:=d7bd4ba2f0115631bcba37ee036a14fe4c5af9f26004f278290c5e330ba74fec
+PKG_HASH:=65ba5a7eaed849a96467992877db2e066686045357c47013ca08a004dd7047c5
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
@@ -18,7 +18,7 @@ define Package/ubus-bm
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=ubus bandwidth monitor
-  DEPENDS:=
+  DEPENDS:=+libstdcpp +libubox +libubus +libblobmsg-json
   URL:=https://github.com/oskarirauta/ubus-bm
 endef
 
@@ -32,9 +32,9 @@ define Build/Configure
 endef
 
 define Package/ubus-bm/install
-	$(INSTALL_DIR) $(1)/usr/bin /etc/init.d
-	$(CP) $(PKG_BUILD_DIR)/banner $(1)/usr/bin/
-	$(INSTALL_BIN) ./files/ubus-bm.init $(1)/etc/init.d/ubus-bm
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ubus-bm $(1)/usr/bin/
+	$(INSTALL_BIN) ./files/ubus-bm.init $(1)/etc/init.d
 endef
 
 $(eval $(call BuildPackage,ubus-bm))
