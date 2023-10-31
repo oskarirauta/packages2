@@ -34,7 +34,7 @@ endef
 define Package/ubus-bm/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ubus-bm $(1)/usr/bin/
-	$(INSTALL_BIN) ./files/ubus-bm.init $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/ubus-bm.init $(1)/etc/init.d/ubus-bm
 endef
 
 $(eval $(call BuildPackage,ubus-bm))
