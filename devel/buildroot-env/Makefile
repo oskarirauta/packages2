@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=buildroot-env
-PKG_VERSION:=20230521
+PKG_VERSION:=20240213
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
@@ -27,7 +27,8 @@ define Package/buildroot-env
 		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype \
 		+perlbase-open +perlbase-if +perlbase-digest \
 		+perlbase-autouse +perlbase-sys +perlbase-sort \
-		+perlbase-diagnostics +python3-lib2to3 +coreutils-join \
+		+perlbase-diagnostics +perlbase-time perlbase-json-pp \
+		+python3-lib2to3 +coreutils-join \
 		+re2 +colrm +perl-pods
 endef
 
