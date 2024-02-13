@@ -42,6 +42,8 @@ config LCD4LINUX_CUSTOM_NEEDS_ppp
 config LCD4LINUX_CUSTOM_NEEDS_python
 	bool
 
+config LCD4LINUX_CUSTOM_NEEDS_libubus
+	bool
 
 comment "Drivers ---"
 
@@ -325,6 +327,10 @@ config LCD4LINUX_CUSTOM_PLUGIN_button_exec
 	bool
 	prompt "button_exec"
 
+config LCD4LINUX_CUSTOM_PLUGIN_control
+	bool
+	prompt "control"
+
 config LCD4LINUX_CUSTOM_PLUGIN_cpuinfo
 	bool
 	prompt "cpuinfo"
@@ -393,6 +399,14 @@ config LCD4LINUX_CUSTOM_PLUGIN_kvv
 	bool
 	prompt "kvv"
 
+config LCD4LINUX_CUSTOM_PLUGIN_layout
+	bool
+	prompt "layout"
+
+config LCD4LINUX_CUSTOM_PLUGIN_list
+	bool
+	prompt "list"
+
 config LCD4LINUX_CUSTOM_PLUGIN_loadavg
 	bool
 	prompt "loadavg"
@@ -450,6 +464,10 @@ config LCD4LINUX_CUSTOM_PLUGIN_qnaplog
 	prompt "qnaplog"
 	select LCD4LINUX_CUSTOM_NEEDS_libsqlite3
 
+config LCD4LINUX_CUSTOM_PLUGIN_run
+	bool
+	prompt "run"
+
 config LCD4LINUX_CUSTOM_PLUGIN_seti
 	bool
 	prompt "seti"
@@ -457,6 +475,11 @@ config LCD4LINUX_CUSTOM_PLUGIN_seti
 config LCD4LINUX_CUSTOM_PLUGIN_statfs
 	bool
 	prompt "statfs"
+
+config LCD4LINUX_CUSTOM_PLUGIN_ubus
+	bool
+	prompt "ubus"
+	select LCD4LINUX_CUSTOM_NEEDS_libubus
 
 config LCD4LINUX_CUSTOM_PLUGIN_uname
 	bool

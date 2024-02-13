@@ -1,0 +1,349 @@
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -165,6 +165,7 @@ plugin_list.c                 \
+ plugin_loadavg.c              \
+ plugin_meminfo.c              \
+ plugin_menu.c                 \
++plugin_ubus.c                 \
+ plugin_mpd.c		          \
+ plugin_mpris_dbus.c           \
+ plugin_mysql.c                \
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -492,6 +492,7 @@ plugin_isdn.c                 \
+ plugin_kvv.c                  \
+ plugin_layout.c               \
+ plugin_list.c                 \
++plugin_ubus.c                 \
+ plugin_loadavg.c              \
+ plugin_meminfo.c              \
+ plugin_menu.c                 \
+@@ -742,6 +743,7 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_kvv.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_layout.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_list.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_ubus.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_loadavg.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_math.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin_meminfo.Po@am__quote@
+--- a/config.h.in
++++ b/config.h.in
+@@ -387,6 +387,9 @@
+ /* list plugin */
+ #undef PLUGIN_LIST
+ 
++/* ubus plugin */
++#undef PLUGIN_UBUS
++
+ /* loadavg plugin */
+ #undef PLUGIN_LOADAVG
+ 
+--- a/configure
++++ b/configure
+@@ -7547,13 +7547,13 @@ for plugin in $plugins; do
+              apm,asterisk,button_exec,control,cpuinfo,dbus,diskstats,dvb,exec,event,
+              fifo,file,gps,hddtemp,huawei,i2c_sensors,iconv,imon,isdn,kvv,
+              layout,list,loadavg,meminfo,menu,mpd,mpris_dbus,mysql,netdev,netinfo,pop3,ppp,
+-	     proc_stat,python,qnaplog,raspi,run,sample,seti,statfs,uname,uptime,
++	     proc_stat,python,qnaplog,raspi,run,sample,seti,statfs,ubus,uname,uptime,
+              w1retap,wireless,xmms" >&5
+ $as_echo "available plugins:
+              apm,asterisk,button_exec,control,cpuinfo,dbus,diskstats,dvb,exec,event,
+              fifo,file,gps,hddtemp,huawei,i2c_sensors,iconv,imon,isdn,kvv,
+              layout,list,loadavg,meminfo,menu,mpd,mpris_dbus,mysql,netdev,netinfo,pop3,ppp,
+-	     proc_stat,python,qnaplog,raspi,run,sample,seti,statfs,uname,uptime,
++	     proc_stat,python,qnaplog,raspi,run,sample,seti,statfs,ubus,uname,uptime,
+              w1retap,wireless,xmms" >&6; }
+          as_fn_error $? "run ./configure --with-plugins=..." "$LINENO" 5
+          ;;
+@@ -7598,6 +7598,7 @@ $as_echo "available plugins:
+          PLUGIN_SAMPLE="yes"
+          PLUGIN_SETI="yes"
+          PLUGIN_STATFS="yes"
++         PLUGIN_UBUS="yes"
+          PLUGIN_UNAME="yes"
+          PLUGIN_UPTIME="yes"
+          PLUGIN_W1RETAP="yes"
+@@ -7645,6 +7646,7 @@ $as_echo "available plugins:
+          PLUGIN_SAMPLE="no"
+          PLUGIN_SETI="no"
+          PLUGIN_STATFS="no"
++         PLUGIN_UBUS="no"
+          PLUGIN_UNAME="no"
+          PLUGIN_UPTIME="no"
+          PLUGIN_W1RETAP="no"
+@@ -7771,6 +7773,9 @@ $as_echo "available plugins:
+       statfs)
+          PLUGIN_STATFS=$val
+          ;;
++      ubus)
++         PLUGIN_UBUS=$val
++         ;;
+       uname)
+          PLUGIN_UNAME=$val
+          ;;
+@@ -9720,6 +9725,15 @@ $as_echo "$as_me: WARNING: sys/vfs.h hea
+    fi
+ fi
+ 
++# ubus
++if test "$PLUGIN_UBUS" = "yes"; then
++   PLUGINS="$PLUGINS plugin_ubus.o"
++   PLUGINLIBS="$PLUGINLIBS -lubox -lubus -lblobmsg_json"
++
++$as_echo "#define PLUGIN_UBUS 1" >>confdefs.h
++
++fi
++
+ # uname
+ if test "$PLUGIN_UNAME" = "yes"; then
+    PLUGINS="$PLUGINS plugin_uname.o"
+--- a/plugin.c
++++ b/plugin.c
+@@ -168,6 +168,9 @@ char *Plugins[] = {
+ #ifdef PLUGIN_STATFS
+     "statfs",
+ #endif
++#ifdef PLUGIN_UBUS
++    "ubus"
++#endif
+ #ifdef PLUGIN_UNAME
+     "uname",
+ #endif
+@@ -277,6 +280,8 @@ int plugin_init_seti(void);
+ void plugin_exit_seti(void);
+ int plugin_init_statfs(void);
+ void plugin_exit_statfs(void);
++int plugin_init_ubus(void);
++void plugin_exit_ubus(void);
+ int plugin_init_uname(void);
+ void plugin_exit_uname(void);
+ int plugin_init_uptime(void);
+@@ -430,6 +435,9 @@ int plugin_init(void)
+ #ifdef PLUGIN_STATFS
+     plugin_init_statfs();
+ #endif
++#ifdef PLUGIN_UBUS
++    plugin_init_ubus();
++#endif
+ #ifdef PLUGIN_UNAME
+     plugin_init_uname();
+ #endif
+@@ -566,6 +574,9 @@ void plugin_exit(void)
+ #ifdef PLUGIN_STATFS
+     plugin_exit_statfs();
+ #endif
++#ifdef PLUGIN_UBUS
++    plugin_exit_ubus();
++#endif
+ #ifdef PLUGIN_UNAME
+     plugin_exit_uname();
+ #endif
+--- /dev/null
++++ b/plugin_ubus.c
+@@ -0,0 +1,154 @@
++/* $Id$
++ * $URL$
++ *
++ * plugin for querying data from ubus
++ *
++ * Copyright (C) 2023 Oskari Rauta<oskari.rauta@gmail.com>
++ * MIT License
++ *
++*/
++
++/*
++ * exported functions:
++ *
++ * int plugin_init_ubus (void)
++ *  adds ubus() function
++ *
++ */
++
++#include "config.h"
++#include <stdlib.h>
++#include <string.h>
++#include <ctype.h>
++#include <libubus.h>
++#include "debug.h"
++#include "plugin.h"
++#include "cfg.h"
++
++#ifdef WITH_DMALLOC
++#include <dmalloc.h>
++#endif
++
++static struct blob_buf b;
++static char *ubus_socket;
++static char Section[] = "Plugin:ubus";
++
++static int configure_ubus(void)
++{
++
++	static int configured = 0;
++	char *s;
++
++	if ( configured != 0 )
++		return configured;
++
++	if ( ubus_socket != NULL ) {
++		free(ubus_socket);
++		ubus_socket = NULL;
++	}
++
++	s = cfg_get(Section, "socket", "");
++	if ( *s == '\0' ) {
++		info("[ubus] using default socket", Section, cfg_source());
++		ubus_socket = NULL;
++	} else strcpy(ubus_socket, s);
++	free(s);
++
++	configured = 1;
++	return configured;
++}
++
++static void my_ubus(RESULT * result, RESULT * arg1, RESULT * arg2)
++{
++
++	struct ubus_context *ctx;
++	char *path, *args;
++
++	path = R2S(arg1);
++	args = R2S(arg2);
++
++	if ( strcmp(path, "") == 0 ) {
++		error("ubus call path missing", 0);
++		SetResult(&result, R_STRING, "");
++		return;
++	}
++
++	ctx = ubus_connect(ubus_socket);
++	if ( !ctx ) {
++		error("ubus failed to connect to socket: %s", ubus_socket, strerror(errno));
++		SetResult(&result, R_STRING, "");
++		return;
++	}
++
++	uint32_t id;
++	int ret;
++
++	blob_buf_init(&b, 0);
++	if ( strcmp(args, "") != 0 ) {
++		if ( !blobmsg_add_json_from_string(&b, args)) {
++			error("ubus failed to parse json: %s", args, UBUS_STATUS_PARSE_ERROR);
++			SetResult(&result, R_STRING, "");
++			ubus_free(ctx);
++			return;
++		}
++	}
++
++	int ret = ubus_lookup_id(ctx, "call", &id);
++	if ( ret ) {
++		error("ubus call failed", ret);
++		SetResult(&result, R_STRING, "");
++		ubus_free(ctx);
++		return;
++	}
++
++	SetResult(&result, R_STRING, "");
++
++	struct ubus_request *req;
++	struct blob_attr *msg;
++
++	ret = ubus_invoke_async(ctx, id, b.head, msg, req)
++	if ( ret )
++		error("ubus failed to call %s", path, 1);
++		SetResult(&result, R_STRING, "");
++		if ( req != NULL )
++			free(req);
++		if ( msg != NULL )
++			free(msg);
++		ubus_free(ctx);
++		return;
++	}
++
++	if ( !msg ) {
++		error("ubus call to %s failed with empty result", path, 1);
++		SetResult(&result, R_STRING, "");
++		if ( req != NULL )
++			free(req);
++		if ( msg != NULL )
++			free(msg);
++		ubus_free(ctx);
++		return;
++
++	SetResult(&result, R_STRING, blobmsg_format_json_indent(msg, true, -1));
++
++	if ( req != NULL )
++		free(req);
++	if ( msg != NULL )
++		free(msg);
++
++	ubus_free(ctx);
++}
++
++
++int plugin_init_ubus(void) {
++
++	AddFunction("ubus", 2, my_ubus);
++	return 0;
++}
++
++void plugin_exit_ubus(void) {
++
++	if ( ubus_socket != NULL ) {
++		free(ubus_socket);
++		ubus_socket = NULL;
++	}
++}
+--- a/plugins.m4
++++ b/plugins.m4
+@@ -56,7 +56,7 @@ for plugin in $plugins; do
+             [ apm,asterisk,button_exec,control,cpuinfo,dbus,diskstats,dvb,exec,event,]
+             [ fifo,file,gps,hddtemp,huawei,i2c_sensors,iconv,imon,isdn,kvv,]
+             [ layout,list,loadavg,meminfo,menu,mpd,mpris_dbus,mysql,netdev,netinfo,pop3,ppp,]
+-	    [ proc_stat,python,qnaplog,raspi,run,sample,seti,statfs,uname,uptime,]
++	    [ proc_stat,python,qnaplog,raspi,run,sample,seti,statfs,ubus,uname,uptime,]
+             [ w1retap,wireless,xmms])
+          AC_MSG_ERROR([run ./configure --with-plugins=...])
+          ;;
+@@ -101,6 +101,7 @@ for plugin in $plugins; do
+          PLUGIN_SAMPLE="yes"
+          PLUGIN_SETI="yes"
+          PLUGIN_STATFS="yes"
++         PLUGIN_UBUS="yes"
+          PLUGIN_UNAME="yes"
+          PLUGIN_UPTIME="yes"
+          PLUGIN_W1RETAP="yes"    	 
+@@ -148,6 +149,7 @@ for plugin in $plugins; do
+          PLUGIN_SAMPLE="no"
+          PLUGIN_SETI="no"
+          PLUGIN_STATFS="no"
++         PLUGIN_UBUS="no"
+          PLUGIN_UNAME="no"
+          PLUGIN_UPTIME="no"
+          PLUGIN_W1RETAP="no"    	 
+@@ -274,6 +276,9 @@ for plugin in $plugins; do
+       statfs)
+          PLUGIN_STATFS=$val
+          ;;
++      ubus)
++         PLUGIN_UBUS=$val
++         ;;
+       uname)
+          PLUGIN_UNAME=$val
+          ;;
+@@ -656,6 +661,13 @@ if test "$PLUGIN_STATFS" = "yes"; then
+    fi 
+ fi
+ 
++# ubus
++if test "$PLUGIN_UBUS" = "yes"; then
++   PLUGINS="$PLUGINS plugin_ubus.o"
++   PLUGINLIBS="$PLUGINLIBS -lubox -lubus -lblobmsg_json"
++   AC_DEFINE(PLUGIN_UNAME,1,[ubus plugin])
++fi
++
+ # uname
+ if test "$PLUGIN_UNAME" = "yes"; then
+    PLUGINS="$PLUGINS plugin_uname.o"

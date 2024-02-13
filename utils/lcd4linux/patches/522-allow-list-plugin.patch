@@ -1,0 +1,20 @@
+--- a/plugins.m4
++++ b/plugins.m4
+@@ -27,7 +27,7 @@ AC_MSG_CHECKING([which plugins to compil
+ AC_ARG_WITH(
+   plugins, 
+   [  --with-plugins=<list>   choose which plugins to compile.]
+-  [                        type --with-plugins=list for a list]	
++  [                        type --with-plugins=help for a list]	
+   [                        of avaible plugins]
+   [                        plugins may be excluded with 'all,!<plugin>',]	
+   [                        (try 'all,\!<plugin>' if your shell complains...)],
+@@ -50,7 +50,7 @@ for plugin in $plugins; do
+    esac
+ 	
+    case "$plugin" in
+-      list)
++      help)
+          AC_MSG_RESULT(
+             [available plugins:]
+             [ apm,asterisk,button_exec,control,cpuinfo,dbus,diskstats,dvb,exec,event,]

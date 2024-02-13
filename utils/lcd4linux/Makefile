@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lcd4linux
-PKG_RELEASE:=5
+PKG_RELEASE:=6
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/TangoCash/lcd4linux.git
 PKG_SOURCE_DATE:=2023-10-20
 PKG_SOURCE_VERSION:=f8f7307fdba97adfb9561881ab281495c28ba86e
-PKG_MIRROR_HASH:=a8aad10ac90e1b10ab4bedd6330a0189b3735ff0ee8c4592b185edbce73c4a32
+PKG_MIRROR_HASH:=a1df0a4ebe3a0b6716ceb4d3d8882a2aeeab335b3d311254d8a73fc24e17684f
 
 PKG_MAINTAINER:=Florian Eckert <fe@dev.tdt.de>
 PKG_LICENSE:=GPL-2.0-or-later
@@ -79,6 +79,7 @@ LCD4LINUX_PLUGINS:= \
 	apm \
 	asterisk \
 	button_exec \
+	control \
 	cpuinfo \
 	dbus \
 	diskstats \
@@ -95,6 +96,8 @@ LCD4LINUX_PLUGINS:= \
 	imon \
 	isdn \
 	kvv \
+	layout \
+	list \
 	loadavg \
 	netdev \
 	netinfo \
@@ -102,13 +105,14 @@ LCD4LINUX_PLUGINS:= \
 	mpd \
 	mpris_dbus \
 	mysql \
-	netdev \
 	pop3 \
 	ppp \
 	proc_stat \
 	qnaplog \
+	run \
 	seti \
 	statfs \
+	ubus \
 	uname \
 	uptime \
 	w1retap \
@@ -135,6 +139,7 @@ endef
 define Package/lcd4linux-custom
 $(call Package/lcd4linux/Default)
   DEPENDS:= \
+	+libubox +libubus +libblobmsg-json \
 	+LCD4LINUX_CUSTOM_NEEDS_libdbus:libdbus \
 	+LCD4LINUX_CUSTOM_NEEDS_libgd:libgd \
 	$(if $(ICONV_FULL),+LCD4LINUX_CUSTOM_NEEDS_libiconv:libiconv-full) \
@@ -144,6 +149,9 @@ $(call Package/lcd4linux/Default)
 	+LCD4LINUX_CUSTOM_NEEDS_libncurses:libncurses \
 	+LCD4LINUX_CUSTOM_NEEDS_libsqlite3:libsqlite3 \
 	+LCD4LINUX_CUSTOM_NEEDS_libusb:libusb-compat \
+	+LCD4LINUX_CUSTOM_NEEDS_libubus:libubox \
+	+LCD4LINUX_CUSTOM_NEEDS_libubus:libubus \
+	+LCD4LINUX_CUSTOM_NEEDS_libubus:libblobmsg-json \
 #	+LCD4LINUX_CUSTOM_NEEDS_libftdi:libftdi \
 #	+LCD4LINUX_CUSTOM_NEEDS_libX11:libX11 \
 #	+LCD4LINUX_CUSTOM_NEEDS_python:python
@@ -174,6 +182,7 @@ $(call Package/lcd4linux/Default)
 	+libncurses \
 	+libsqlite3 \
 	+libusb-compat \
+	+libubox +libubus +libblobmsg-json \
 #	+libftdi \
 #	+libX11 \
 #	+python
@@ -216,7 +225,7 @@ ifeq ($(BUILD_VARIANT),custom)
   endif
 
   CONFIGURE_ARGS+= \
-	--with-drivers="$(LCD4LINUX_CUSTOM_DRIVERS) DPF" \
+	--with-drivers="$(LCD4LINUX_CUSTOM_DRIVERS)" \
 	--with-plugins="$(LCD4LINUX_CUSTOM_PLUGINS)" \
 
   ifneq ($(CONFIG_LCD4LINUX_CUSTOM_NEEDS_libiconv),)
