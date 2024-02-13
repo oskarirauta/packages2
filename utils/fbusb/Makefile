@@ -17,7 +17,7 @@ define KernelPackage/fbusb
 endef
 
 define KernelPackage/fbusb/description
-  USB framebuffer, /dev/fb0
+  USB framebuffer, /dev/fb1
 endef
 
 MAKE_OPTS:= \
