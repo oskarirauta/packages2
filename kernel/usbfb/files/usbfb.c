@@ -1,5 +1,5 @@
 /*
-* fbusb.c
+* usbfb.c
 *
 * Copyright (c) 2018 Qin Wei (me@vonger.cn)
 *
@@ -23,35 +23,35 @@
 #include <linux/input.h>
 #include <linux/usb/input.h>
 
-#define FBUSB_BPP		16
+#define USBFB_BPP		16
 
-#define FBUSB_PALETTE_SIZE	16
-#define FBUSB_SCREEN_BUFFER	58
-#define FBUSB_MAX_DELAY		100
-#define FBUSB_PAUSE_INFINIT -1
+#define USBFB_PALETTE_SIZE	16
+#define USBFB_SCREEN_BUFFER	58
+#define USBFB_MAX_DELAY		100
+#define USBFB_PAUSE_INFINIT -1
 
-static const struct fb_fix_screeninfo fbusb_fix = {
-	.id = "fbusb",
+static const struct fb_fix_screeninfo usbfb_fix = {
+	.id = "usbfb",
 	.type = FB_TYPE_PACKED_PIXELS,
 	.visual = FB_VISUAL_TRUECOLOR,
 	.accel = FB_ACCEL_NONE,
 };
 
-static const struct fb_var_screeninfo fbusb_var = {
+static const struct fb_var_screeninfo usbfb_var = {
 	.height = -1,
 	.width = -1,
 	.activate = FB_ACTIVATE_NOW,
 	.vmode = FB_VMODE_NONINTERLACED,
 };
 
-struct fbusb_par {
+struct usbfb_par {
 	struct fb_info *info;
 	char cmd[6];		/* store write frame command */
-	u32 palette[FBUSB_PALETTE_SIZE];
+	u32 palette[USBFB_PALETTE_SIZE];
 	int screen_size;	/* real used size, not aligned page */
 };
 
-struct fbusb_info {
+struct usbfb_info {
 	struct fb_info *info;
 	struct task_struct *task;
 	struct usb_interface *interface;
@@ -81,14 +81,14 @@ struct fbusb_info {
 	int cmd_len;
 };
 
-static struct fbusb_info *cur_uinfo;
+static struct usbfb_info *cur_uinfo;
 
-static int fbusb_reboot_callback(struct notifier_block *self,
+static int usbfb_reboot_callback(struct notifier_block *self,
 				 unsigned long val, void *data)
 {
 	if (val == SYS_RESTART) {
 		if (cur_uinfo) {
-			cur_uinfo->pause = FBUSB_PAUSE_INFINIT;
+			cur_uinfo->pause = USBFB_PAUSE_INFINIT;
 			msleep(100);
 		}
 	}
@@ -96,11 +96,11 @@ static int fbusb_reboot_callback(struct notifier_block *self,
 	return NOTIFY_DONE;
 }
 
-static struct notifier_block fbusb_reboot_notifier = {
-	.notifier_call = fbusb_reboot_callback,
+static struct notifier_block usbfb_reboot_notifier = {
+	.notifier_call = usbfb_reboot_callback,
 };
 
-static struct fb_ops fbusb_ops = {
+static struct fb_ops usbfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_read = fb_sys_read,
 	.fb_write = fb_sys_write,
@@ -110,30 +110,30 @@ static struct fb_ops fbusb_ops = {
 	.fb_imageblit = sys_imageblit,
 };
 
-static int fbusb_update_frame(struct fbusb_info *uinfo)
+static int usbfb_update_frame(struct usbfb_info *uinfo)
 {
 	struct fb_info *info = uinfo->info;
-	struct fbusb_par *par = info->par;
+	struct usbfb_par *par = info->par;
 	struct usb_device *udev = uinfo->udev;
 	int ret;
 
 	/* 0x40 USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE */
 	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), 0xb0, 0x40,
 			      0, 0, par->cmd, sizeof(par->cmd),
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < 0)
 		return ret;
 
 	ret =
 	    usb_bulk_msg(udev, usb_sndbulkpipe(udev, 0x02), info->screen_buffer,
-			 par->screen_size, NULL, FBUSB_MAX_DELAY);
+			 par->screen_size, NULL, USBFB_MAX_DELAY);
 	if (ret < 0)
 		return ret;
 
 	return 0;
 }
 
-static int fbusb_send_command(struct fbusb_info *uinfo)
+static int usbfb_send_command(struct usbfb_info *uinfo)
 {
 	int ret;
 
@@ -142,16 +142,16 @@ static int fbusb_send_command(struct fbusb_info *uinfo)
 
 	ret = usb_control_msg(uinfo->udev, usb_sndctrlpipe(uinfo->udev, 0),
 			      0xb0, 0x40, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	uinfo->cmd_len = 0;
 
 	return ret;
 }
 
-static int fbusb_refresh_thread(void *data)
+static int usbfb_refresh_thread(void *data)
 {
-	struct fbusb_info *uinfo = data;
-	struct fbusb_par *par = uinfo->info->par;
+	struct usbfb_info *uinfo = data;
+	struct usbfb_par *par = uinfo->info->par;
 
 	memset(uinfo->info->screen_buffer, 0, par->screen_size);
 
@@ -161,7 +161,7 @@ static int fbusb_refresh_thread(void *data)
 	uinfo->cmd[2] = 0x00;
 	uinfo->cmd[3] = 0x00;
 	uinfo->cmd_len = 4;
-	fbusb_send_command(uinfo);
+	usbfb_send_command(uinfo);
 
 	while (!kthread_should_stop()) {
 		// pause == 0 means not pause.
@@ -169,10 +169,10 @@ static int fbusb_refresh_thread(void *data)
 		// pause > 0, sleep milliseconds and send frame.
 		if (uinfo->pause >= 0) {
 			msleep(uinfo->pause);
-                        if (fbusb_update_frame(uinfo) < 0)
-                                uinfo->pause = FBUSB_PAUSE_INFINIT;
-                        if (fbusb_send_command(uinfo) < 0)
-                                uinfo->pause = FBUSB_PAUSE_INFINIT;
+                        if (usbfb_update_frame(uinfo) < 0)
+                                uinfo->pause = USBFB_PAUSE_INFINIT;
+                        if (usbfb_send_command(uinfo) < 0)
+                                uinfo->pause = USBFB_PAUSE_INFINIT;
 		} else {
 			ssleep(1);
 		}
@@ -213,9 +213,9 @@ struct touch {
 	struct point p[2];
 };
 
-static void fbusb_touch_irq(struct urb *urb)
+static void usbfb_touch_irq(struct urb *urb)
 {
-	struct fbusb_info *uinfo = urb->context;
+	struct usbfb_info *uinfo = urb->context;
 	struct device *dev = &uinfo->interface->dev;
 	struct touch *t = (struct touch *)uinfo->data;
 	int ret, x, y, touch;
@@ -232,55 +232,55 @@ static void fbusb_touch_irq(struct urb *urb)
 	input_report_abs(uinfo->input, ABS_X, x);
 	input_report_abs(uinfo->input, ABS_Y, y);
 	input_sync(uinfo->input);
-	dev_dbg(dev, "touch x=%d, y=%d, key=%d.\n", x, y, touch);
+	dev_dbg(dev, "touch x=%d, y=%d, key=%d\n", x, y, touch);
 
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
 	if (ret)
 		dev_err(dev, "usb_submit_urb failed at irq: %d\n", ret);
 }
 
-static int fbusb_touch_open(struct input_dev *input)
+static int usbfb_touch_open(struct input_dev *input)
 {
-	struct fbusb_info *uinfo = input_get_drvdata(input);
+	struct usbfb_info *uinfo = input_get_drvdata(input);
 	int ret;
 
 	ret = usb_submit_urb(uinfo->irq, GFP_KERNEL);
 	if (ret) {
 		dev_err(&uinfo->interface->dev,
-			"usb_submit_urb failed at open: %d.\n", ret);
+			"usb_submit_urb failed at open: %d\n", ret);
 		return -EIO;
 	}
 
 	return 0;
 }
 
-static void fbusb_touch_close(struct input_dev *input)
+static void usbfb_touch_close(struct input_dev *input)
 {
-	struct fbusb_info *uinfo = input_get_drvdata(input);
+	struct usbfb_info *uinfo = input_get_drvdata(input);
 	usb_kill_urb(uinfo->irq);
 }
 
-static ssize_t fbusb_frame_count_show(struct device *dev,
+static ssize_t usbfb_frame_count_show(struct device *dev,
 				      struct device_attribute *attr, char *buf)
 {
-	struct fbusb_info *uinfo = dev_get_drvdata(dev);
+	struct usbfb_info *uinfo = dev_get_drvdata(dev);
 	return sprintf(buf, "%d\n", uinfo->frame_count);
 }
 
-static DEVICE_ATTR(frame_count, S_IRUGO, fbusb_frame_count_show, NULL);
+static DEVICE_ATTR(frame_count, S_IRUGO, usbfb_frame_count_show, NULL);
 
-static ssize_t fbusb_command_show(struct device *dev,
+static ssize_t usbfb_command_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
-	struct fbusb_info *uinfo = dev_get_drvdata(dev);
+	struct usbfb_info *uinfo = dev_get_drvdata(dev);
 	return sprintf(buf, "%d\n", uinfo->cmd_len);
 }
 
-static ssize_t fbusb_command_store(struct device *dev,
+static ssize_t usbfb_command_store(struct device *dev,
 				   struct device_attribute *attr,
 				   const char *buf, size_t count)
 {
-	struct fbusb_info *uinfo = dev_get_drvdata(dev);
+	struct usbfb_info *uinfo = dev_get_drvdata(dev);
 	int used = sizeof(uinfo->cmd);
 
 	if (count < used)
@@ -291,27 +291,27 @@ static ssize_t fbusb_command_store(struct device *dev,
 	return used;
 }
 
-static DEVICE_ATTR(command, 0660, fbusb_command_show, fbusb_command_store);
+static DEVICE_ATTR(command, 0660, usbfb_command_show, usbfb_command_store);
 
-static ssize_t fbusb_pause_show(struct device *dev,
+static ssize_t usbfb_pause_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	struct fbusb_info *uinfo = dev_get_drvdata(dev);
-	return sprintf(buf, "%d\n", uinfo->pause);
+	struct usbfb_info *uinfo = dev_get_drvdata(dev);
+	return sprintf(buf, "%ld\n", uinfo->pause);
 }
 
-static ssize_t fbusb_pause_store(struct device *dev,
+static ssize_t usbfb_pause_store(struct device *dev,
 				 struct device_attribute *attr, const char *buf,
 				 size_t count)
 {
-	struct fbusb_info *uinfo = dev_get_drvdata(dev);
+	struct usbfb_info *uinfo = dev_get_drvdata(dev);
 	kstrtol(buf, 10, &uinfo->pause);
 	return count;
 }
 
-static DEVICE_ATTR(pause, 0660, fbusb_pause_show, fbusb_pause_store);
+static DEVICE_ATTR(pause, 0660, usbfb_pause_show, usbfb_pause_store);
 
-static int fbusb_get_info(struct fbusb_info *uinfo)
+static int usbfb_get_info(struct usbfb_info *uinfo)
 {
 	int ret;
 
@@ -325,21 +325,21 @@ static int fbusb_get_info(struct fbusb_info *uinfo)
 
 	ret = usb_control_msg(uinfo->udev, usb_sndctrlpipe(uinfo->udev, 0),
 			      0xb5, 0x40, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < uinfo->cmd_len)
 		return -1;
 
 	uinfo->cmd_len = 1;
 	ret = usb_control_msg(uinfo->udev, usb_rcvctrlpipe(uinfo->udev, 0),
 			      0xb6, 0xc0, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < uinfo->cmd_len)
 		return -1;
 
 	uinfo->cmd_len = 5;
 	ret = usb_control_msg(uinfo->udev, usb_rcvctrlpipe(uinfo->udev, 0),
 			      0xb7, 0xc0, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < uinfo->cmd_len)
 		return -1;
 
@@ -347,7 +347,7 @@ static int fbusb_get_info(struct fbusb_info *uinfo)
 	return 1;
 }
 
-static int fbusb_get_version(struct fbusb_info *uinfo)
+static int usbfb_get_version(struct usbfb_info *uinfo)
 {
 	int ret;
 
@@ -361,21 +361,21 @@ static int fbusb_get_version(struct fbusb_info *uinfo)
 
 	ret = usb_control_msg(uinfo->udev, usb_sndctrlpipe(uinfo->udev, 0),
 			      0xb5, 0x40, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < uinfo->cmd_len)
 		return -1;
 
 	uinfo->cmd_len = 1;
 	ret = usb_control_msg(uinfo->udev, usb_rcvctrlpipe(uinfo->udev, 0),
 			      0xb6, 0xc0, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < uinfo->cmd_len)
 		return -1;
 
 	uinfo->cmd_len = 5;
 	ret = usb_control_msg(uinfo->udev, usb_rcvctrlpipe(uinfo->udev, 0),
 			      0xb7, 0xc0, 0, 0, uinfo->cmd, uinfo->cmd_len,
-			      FBUSB_MAX_DELAY);
+			      USBFB_MAX_DELAY);
 	if (ret < uinfo->cmd_len)
 		return -1;
 
@@ -383,18 +383,18 @@ static int fbusb_get_version(struct fbusb_info *uinfo)
 	return 1;
 }
 
-static int fbusb_probe(struct usb_interface *interface,
+static int usbfb_probe(struct usb_interface *interface,
 		       const struct usb_device_id *id)
 {
-	struct fbusb_info *uinfo = NULL;
+	struct usbfb_info *uinfo = NULL;
 	struct fb_info *info = NULL;
-	struct fbusb_par *par = NULL;
+	struct usbfb_par *par = NULL;
 	u8 *vmem = NULL;
 	int vmem_size, ret;
 
 	char *model_string = NULL;
 
-	uinfo = kzalloc(sizeof(struct fbusb_info), GFP_KERNEL);
+	uinfo = kzalloc(sizeof(struct usbfb_info), GFP_KERNEL);
 	if (uinfo == NULL) {
 		ret = -ENOMEM;
 		goto error_fb_release;
@@ -402,9 +402,9 @@ static int fbusb_probe(struct usb_interface *interface,
 	uinfo->interface = interface;
 	usb_set_intfdata(interface, uinfo);
 
-	info = framebuffer_alloc(sizeof(struct fbusb_par), &interface->dev);
+	info = framebuffer_alloc(sizeof(struct usbfb_par), &interface->dev);
 	if (!info) {
-		dev_info(&interface->dev, "framebuffer alloc error.\n");
+		dev_info(&interface->dev, "framebuffer allocation error\n");
 		ret = -ENOMEM;
 		goto error_fb_release;
 	}
@@ -414,10 +414,10 @@ static int fbusb_probe(struct usb_interface *interface,
 
 	par = info->par;
 	par->info = info;
-	if (fbusb_get_info(uinfo) < 0)
+	if (usbfb_get_info(uinfo) < 0)
 		dev_err(&interface->dev, "can't get screen info!\n");
 	uinfo->screen_info = ((int *)(uinfo->cmd + 1))[0];
-	if (fbusb_get_version(uinfo) < 0)
+	if (usbfb_get_version(uinfo) < 0)
 		dev_err(&interface->dev, "can't get screen version!\n");
 	uinfo->version_info = ((int *)(uinfo->cmd + 1))[0];
 
@@ -457,7 +457,7 @@ static int fbusb_probe(struct usb_interface *interface,
 	}
 	dev_info(&interface->dev, "screen model: %s\n", model_string);
 
-	par->screen_size = uinfo->height * uinfo->width * FBUSB_BPP / 8
+	par->screen_size = uinfo->height * uinfo->width * USBFB_BPP / 8
 	    + uinfo->margin;
 
 	/* setup write command for frame */
@@ -475,22 +475,22 @@ static int fbusb_probe(struct usb_interface *interface,
 		goto error_fb_release;
 	}
 
-	info->fbops = &fbusb_ops;
+	info->fbops = &usbfb_ops;
 	info->flags = FBINFO_DEFAULT | FBINFO_VIRTFB;
 	info->screen_buffer = vmem;
 	info->pseudo_palette = par->palette;
 
-	info->fix = fbusb_fix;
+	info->fix = usbfb_fix;
 	info->fix.smem_start = virt_to_phys(vmem);
 	info->fix.smem_len = vmem_size;
-	info->fix.line_length = uinfo->width * FBUSB_BPP / 8;
+	info->fix.line_length = uinfo->width * USBFB_BPP / 8;
 
-	info->var = fbusb_var;
+	info->var = usbfb_var;
 	info->var.xres = uinfo->width;
 	info->var.yres = uinfo->height;
 	info->var.xres_virtual = info->var.xres;
 	info->var.yres_virtual = info->var.yres;
-	info->var.bits_per_pixel = FBUSB_BPP;
+	info->var.bits_per_pixel = USBFB_BPP;
 	info->var.red.offset = 11;
 	info->var.red.length = 5;
 	info->var.green.offset = 5;
@@ -506,9 +506,9 @@ static int fbusb_probe(struct usb_interface *interface,
 		goto error_fb_release;
 	}
 
-	uinfo->task = kthread_run(fbusb_refresh_thread, uinfo, "fbusb");
+	uinfo->task = kthread_run(usbfb_refresh_thread, uinfo, "usbfb");
 	if (IS_ERR(uinfo->task)) {
-		dev_err(&interface->dev, "create thread failed.\n");
+		dev_err(&interface->dev, "create thread failed\n");
 		goto error_fb_release;
 	}
 
@@ -516,13 +516,13 @@ static int fbusb_probe(struct usb_interface *interface,
 	device_create_file(&interface->dev, &dev_attr_frame_count);
 	device_create_file(&interface->dev, &dev_attr_command);
 
-	register_reboot_notifier(&fbusb_reboot_notifier);
+	register_reboot_notifier(&usbfb_reboot_notifier);
 	cur_uinfo = uinfo;
 
 	/* setup usb interrupt device */
 	uinfo->irq = usb_alloc_urb(0, GFP_KERNEL);
 	if (!uinfo->irq) {
-		dev_err(&interface->dev, "unable to alloc usb irq.\n");
+		dev_err(&interface->dev, "unable to allocate usb irq\n");
 		goto error_fb_release;
 	}
 	uinfo->data_size = 14;	/* touch infomation data length */
@@ -530,7 +530,7 @@ static int fbusb_probe(struct usb_interface *interface,
 					 GFP_KERNEL, &uinfo->dma);
 	usb_fill_int_urb(uinfo->irq, uinfo->udev,
 			 usb_rcvintpipe(uinfo->udev, 1), uinfo->data,
-			 uinfo->data_size, fbusb_touch_irq, uinfo, 0);
+			 uinfo->data_size, usbfb_touch_irq, uinfo, 0);
 	uinfo->irq->dev = uinfo->udev;
 	uinfo->irq->transfer_dma = uinfo->dma;
 	uinfo->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
@@ -551,17 +551,17 @@ static int fbusb_probe(struct usb_interface *interface,
 	input_set_abs_params(uinfo->input, ABS_X, 0, info->var.xres, 0, 0);
 	input_set_abs_params(uinfo->input, ABS_Y, 0, info->var.yres, 0, 0);
 
-	uinfo->input->open = fbusb_touch_open;
-	uinfo->input->close = fbusb_touch_close;
+	uinfo->input->open = usbfb_touch_open;
+	uinfo->input->close = usbfb_touch_close;
 	input_set_drvdata(uinfo->input, uinfo);
 
 	ret = input_register_device(uinfo->input);
 	if (ret) {
-		dev_err(&interface->dev, "unable to regist touch device.\n");
+		dev_err(&interface->dev, "unable to register touch device\n");
 		goto error_free_urb;
 	}
 
-	dev_info(&interface->dev, "fb%d: mode=%dx%dx%d.\n", info->node,
+	dev_info(&interface->dev, "fb%d: mode=%dx%dx%d\n", info->node,
 		 info->var.xres, info->var.yres, info->var.bits_per_pixel);
 
 	return 0;
@@ -578,9 +578,9 @@ static int fbusb_probe(struct usb_interface *interface,
 	return ret;
 }
 
-static void fbusb_disconnect(struct usb_interface *interface)
+static void usbfb_disconnect(struct usb_interface *interface)
 {
-	struct fbusb_info *uinfo = usb_get_intfdata(interface);
+	struct usbfb_info *uinfo = usb_get_intfdata(interface);
 	struct fb_info *info = uinfo->info;
 
 	if (uinfo->task)
@@ -600,27 +600,27 @@ static void fbusb_disconnect(struct usb_interface *interface)
 	device_remove_file(&interface->dev, &dev_attr_frame_count);
 	device_remove_file(&interface->dev, &dev_attr_command);
 
-	unregister_reboot_notifier(&fbusb_reboot_notifier);
+	unregister_reboot_notifier(&usbfb_reboot_notifier);
 
-	dev_info(&interface->dev, "device now disconnected.\n");
+	dev_info(&interface->dev, "USB framebuffer device disconnected\n");
 }
 
-static const struct usb_device_id fbusb_ids[] = {
+static const struct usb_device_id usbfb_ids[] = {
 	{USB_DEVICE(0xc872, 0x1004)},
 	{}
 };
 
-MODULE_DEVICE_TABLE(usb, fbusb_ids);
+MODULE_DEVICE_TABLE(usb, usbfb_ids);
 
-static struct usb_driver fbusb_driver = {
-	.name = "fbusb",
-	.probe = fbusb_probe,
-	.disconnect = fbusb_disconnect,
-	.id_table = fbusb_ids,
+static struct usb_driver usbfb_driver = {
+	.name = "usbfb",
+	.probe = usbfb_probe,
+	.disconnect = usbfb_disconnect,
+	.id_table = usbfb_ids,
 };
 
-module_usb_driver(fbusb_driver);
+module_usb_driver(usbfb_driver);
 
 MODULE_AUTHOR("Qin Wei (me@vonger.cn)");
-MODULE_DESCRIPTION("VoCore USB2.0 screen framebuffer driver");
+MODULE_DESCRIPTION("VoCore USB2.0 Screen framebuffer driver");
 MODULE_LICENSE("GPL");
