@@ -10,7 +10,7 @@ PKG_HASH:=a1f9dd61247056d36401ce5d6785e74d08a184340eebd3865c345ddaa93f19f4
 
 PKG_INSTALL:=1
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
-PKG_LICENSE:=MIT
+PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
@@ -21,6 +21,7 @@ define Package/extundelete
   SUBMENU:=Filesystem
   TITLE:=undelete for ext3/ext4
   DEPENDS:=+libcomerr +libext2fs +libstdcpp
+  URL:=https://extundelete.sourceforge.net
   MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 endef
 
