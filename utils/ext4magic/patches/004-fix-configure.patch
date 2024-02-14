@@ -1,0 +1,20 @@
+--- a/configure
++++ b/configure
+@@ -11494,7 +11494,7 @@ for ac_lib in '' ext2fs; do
+     ac_res="none required"
+   else
+     ac_res=-l$ac_lib
+-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
++    LIBS="-l$ac_lib  -lcom_err  $ac_func_search_save_LIBS"
+   fi
+   if ac_fn_c_try_link "$LINENO"; then :
+   ac_cv_search_ext2fs_test_inode_bitmap_range=$ac_res
+@@ -11556,7 +11556,7 @@ for ac_lib in '' magic; do
+     ac_res="none required"
+   else
+     ac_res=-l$ac_lib
+-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
++    LIBS="-l$ac_lib  -lcom_err  -lext2fs  $ac_func_search_save_LIBS"
+   fi
+   if ac_fn_c_try_link "$LINENO"; then :
+   ac_cv_search_magic_getpath=$ac_res

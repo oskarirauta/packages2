@@ -1,0 +1,11 @@
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -345,7 +345,7 @@ clean-sbinPROGRAMS:
+ 	rm -f $$list
+ ext4magic$(EXEEXT): $(ext4magic_OBJECTS) $(ext4magic_DEPENDENCIES) $(EXTRA_ext4magic_DEPENDENCIES) 
+ 	@rm -f ext4magic$(EXEEXT)
+-	$(ext4magic_LINK) $(ext4magic_OBJECTS) $(ext4magic_LDADD) $(LIBS)
++	$(ext4magic_LINK) $(ext4magic_OBJECTS) $(ext4magic_LDADD) $(LIBS) -lcom_err
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)
