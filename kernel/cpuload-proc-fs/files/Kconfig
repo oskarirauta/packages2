@@ -1,0 +1,2 @@
+menuconfig PROC_FS_CPULOAD
+	tristate "CPU Load details from proc fs"
