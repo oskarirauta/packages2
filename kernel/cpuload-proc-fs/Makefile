@@ -11,14 +11,12 @@ include $(INCLUDE_DIR)/package.mk
 
 define KernelPackage/cpuload-proc-fs
   TITLE:=cpuloads from procfs
-  SECTION:=kernel
-  CATEGORY:=Kernel modules
   SUBMENU:=Other modules
-  KCONFIG:=CONFIG_PROC_FS_CPULOAD
   FILES:=$(PKG_BUILD_DIR)/cpuload.ko
-  AUTOLOAD:=$(call AutoLoad,01,cpuload)
-  DEPENDS:=
+  AUTOLOAD:=$(call AutoLoad,90,cpuload)
 endef
+
+include $(INCLUDE_DIR)/kernel-defaults.mk
 
 define KernelPackage/cpuload-proc-fs/description
   Kernel module for retrieving cpu loads from procfs
@@ -26,11 +24,11 @@ endef
 
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
-	$(CP) ./files/* $(PKG_BUILD_DIR)/
+	$(CP) files/Makefile files/cpuload.c $(PKG_BUILD_DIR)/
 endef
 
 define Build/Compile
-	+$(KERNEL_MAKE) $(PKG_JOBS) \
+	$(MAKE) $(KERNEL_MAKEOPTS) \
 		M="$(PKG_BUILD_DIR)" \
 		modules
 endef
