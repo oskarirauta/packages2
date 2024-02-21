@@ -11,14 +11,13 @@ include $(INCLUDE_DIR)/package.mk
 
 define KernelPackage/usb-framebuffer
   TITLE:=USB Framebuffer Support
-  SECTION:=kernel
-  CATEGORY:=Kernel modules
   SUBMENU:=USB Support
-  KCONFIG:=CONFIG_USBFB_VOCORE_SCREEN
   FILES:=$(PKG_BUILD_DIR)/usbfb.ko
-  AUTOLOAD:=$(call AutoLoad,01,usbfb)
+  AUTOLOAD:=$(call AutoLoad,75,usbfb)
   DEPENDS:=+kmod-usb-core +kmod-usb-hid +kmod-fb +kmod-fb-tft
 endef
+
+include $(INCLUDE_DIR)/kernel-defaults.mk
 
 define KernelPackage/usb-framebuffer/description
   Kernel module for VoCore Screen, USB framebuffer (/dev/fb1)
@@ -26,11 +25,11 @@ endef
 
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
-	$(CP) ./files/* $(PKG_BUILD_DIR)/
+	$(CP) src/Makefile src/usbfb.c $(PKG_BUILD_DIR)/
 endef
 
 define Build/Compile
-	+$(KERNEL_MAKE) $(PKG_JOBS) \
+	$(MAKE) $(KERNEL_MAKEOPTS) \
 		M="$(PKG_BUILD_DIR)" \
 		modules
 endef
