@@ -1,14 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=systembus
-PKG_VERSION:=0.99
+PKG_VERSION:=0.99.1
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/oskarirauta/systembus.git
-PKG_SOURCE_DATE:=2023-03-01
-PKG_SOURCE_VERSION:=3e7dee1a9322d031449506b32b86eeeab86a4f07
-PKG_MIRROR_HASH:=skip
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/oskarirauta/$(PKG_NAME)/tar.gz/$(PKG_VERSION)?
+PKG_HASH:=06fa41259ff2127cb0d2a6d39487994a110ea2d5638369fb79cc55be0790786a
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
