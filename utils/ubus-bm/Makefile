@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ubus-bm
-PKG_VERSION:=0.97.0
+PKG_VERSION:=0.99.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/ubus-bm/releases/download/$(PKG_VERSION)/
-PKG_HASH:=65ba5a7eaed849a96467992877db2e066686045357c47013ca08a004dd7047c5
+PKG_HASH:=14f5596a4249ee1027fd2a9b0209c1a2a3f513bc27fd6c63ebd57affc9c2eef0
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
