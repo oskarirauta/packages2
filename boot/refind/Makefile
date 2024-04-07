@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=refind
-PKG_VERSION:=0.13.3.1
+PKG_VERSION:=0.14.0.2
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=refind-$(if $(CONFIG_REFIND_TIANOCORE),bin,bin-gnuefi)-$(PKG_VERSION).zip
 PKG_SOURCE_URL:=https://downloads.sourceforge.net/project/refind/$(PKG_VERSION)
-PKG_HASH:=$(if $(CONFIG_REFIND_TIANOCORE),44a981538cf06e683bc095e11694ce8508826fcc6ca6229e116938575e7c4c54,e0e82f53f58e6c0ef769c6563aabe9a984da6482edffc895e5d1bd56aca5f523)
+PKG_HASH:=$(if $(CONFIG_REFIND_TIANOCORE),0a2af79e70fd4435b00e4fd898e7dd3e0256ca6b56b5bba40b69fd19bd41b33c,a8edc6eab6c78a1914443151762d62caad466d2bc983e06685441df512c91b34)
 PKG_BUILD_DIR:=$(BUILD_DIR)/refind-bin-$(PKG_VERSION)
 
 PKG_LICENSE:=GPL-3.0-only
@@ -80,7 +80,7 @@ define Package/refind/install
 		$(1)/usr/share/refind/fonts \
 		$(1)/usr/share/refind/icons \
 		$(1)/usr/share/refind/banners \
-		$(1)/usr/share/refind/keys		
+		$(1)/usr/share/refind/keys
 
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind/refind_$(TIANO_ARCH).efi $(1)/usr/share/refind/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/refind/drivers_$(TIANO_ARCH)/*.efi $(1)/usr/share/refind/drivers_$(TIANO_ARCH)/
