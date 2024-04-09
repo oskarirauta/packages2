@@ -25,7 +25,7 @@ define Package/buildroot-env
 		+bash +quilt +htop +whereis +less +file +findutils +findutils-locate +chattr +lsattr +xxd \
 		+perlbase-ipc +perlbase-module +perlbase-extutils \
 		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype \
-		+perlbase-open +perlbase-if +perlbase-digest \
+		+perlbase-open +perlbase-if +perlbase-digest +perlbase-experimental \
 		+perlbase-autouse +perlbase-sys +perlbase-sort \
 		+perlbase-diagnostics +perlbase-time perlbase-json-pp \
 		+python3-lib2to3 +coreutils-join \
