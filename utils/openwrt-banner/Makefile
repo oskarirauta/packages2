@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openwrt-banner
-PKG_VERSION:=0.90.0
+PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/openwrt-banner/releases/download/$(PKG_VERSION)/
-PKG_HASH:=0c98e79306400ad980c9292b956eec742fb59ad66d96665af34ec6802649cc5d
+PKG_HASH:=59971306a7bc44b623348f052407f54eb2c78e988e940a63338d1d004c67ab07
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
@@ -33,7 +33,7 @@ define Package/openwrt-banner/config
         source "$(SOURCE)/Config.in"
 endef
 
-TARGET_CXXFLAGS += --std=c++23 -fPIC
+TARGET_CXXFLAGS += --std=c++17 -fPIC
 
 ifneq ($(CONFIG_OPENWRT_BANNER_RELEASE),)
 	MAKE_VARS += \
