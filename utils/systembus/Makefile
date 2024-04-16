@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=systembus
-PKG_VERSION:=0.99.1
+PKG_VERSION:=2.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/oskarirauta/$(PKG_NAME)/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=06fa41259ff2127cb0d2a6d39487994a110ea2d5638369fb79cc55be0790786a
+PKG_HASH:=a1aa2b47de626ecc083ba02487b690deadd98305e24196ff714bfd37c652b846
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
