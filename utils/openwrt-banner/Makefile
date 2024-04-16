@@ -6,7 +6,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/openwrt-banner/releases/download/$(PKG_VERSION)/
-PKG_HASH:=010d12efd816d3ad37edee24afadac49216d173d20d80ff835d166b359aa4311
+PKG_HASH:=d29f7e395bf3ed1699aed25886d2d779b1b4898c9d7fbd8adf3ef2cc9a9dc517
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
