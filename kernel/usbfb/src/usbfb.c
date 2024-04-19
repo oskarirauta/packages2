@@ -82,7 +82,6 @@ struct usbfb_info {
 	int width;
 	int height;
 	int margin;
-	int brightness;
 
 	/* local command to control the screen */
 	char cmd[64];
@@ -537,7 +536,6 @@ static int usbfb_probe(struct usb_interface *interface,
 	uinfo->width = 480;
 	uinfo->height = 800;
 	uinfo->margin = 0;
-	uinfo->brightness = 255;
 
 	if (uinfo->screen_info == 0x00000005) {
 		uinfo->height = 854;
