@@ -31,8 +31,10 @@
 #define USBFB_MAX_DELAY		100
 #define USBFB_PAUSE_INFINIT	-1
 
-#define MIN_LEVEL		0
-#define MAX_LEVEL		255
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
+#define MIN_BL_LEVEL		0
+#define MAX_BL_LEVEL		255
+#endif
 
 static const struct fb_fix_screeninfo usbfb_fix = {
 	.id = "usbfb",
@@ -62,7 +64,6 @@ struct usbfb_info {
 	struct task_struct *task;
 	struct usb_interface *interface;
 	struct usb_device *udev;
-	struct backlight_device *bl_dev;
 	u16 command;
 	u32 frame_count;
 	long pause;
@@ -75,6 +76,9 @@ struct usbfb_info {
 	unsigned char *data;
 	dma_addr_t dma;
 	int data_size;
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
+	int power;
+#endif
 
 	/* screen info */
 	u32 screen_info;
@@ -107,11 +111,22 @@ static struct notifier_block usbfb_reboot_notifier = {
 	.notifier_call = usbfb_reboot_callback,
 };
 
+static int usbfb_blank(int blank, struct fb_info *info) {
+
+	struct usbfb_par *par = info->par;
+
+	if ( blank != FB_BLANK_UNBLANK ) 
+		memset(info->screen_buffer, 0, par->screen_size);
+
+	return 0;
+}
+
 static struct fb_ops usbfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_read = fb_sys_read,
 	.fb_write = fb_sys_write,
 //	.fb_setcolreg = cfb_setcolreg,
+	.fb_blank = usbfb_blank,
 	.fb_fillrect = sys_fillrect,
 	.fb_copyarea = sys_copyarea,
 	.fb_imageblit = sys_imageblit,
@@ -312,7 +327,10 @@ static ssize_t usbfb_pause_store(struct device *dev,
 				 size_t count)
 {
 	struct usbfb_info *uinfo = dev_get_drvdata(dev);
-	kstrtol(buf, 10, &uinfo->pause);
+
+	if (kstrtol(buf, 10, &uinfo->pause) < 0)
+		return 0;
+
 	return count;
 }
 
@@ -390,39 +408,51 @@ static int usbfb_get_version(struct usbfb_info *uinfo)
 	return 1;
 }
 
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
 static int usb_fb_bl_get_brightness(struct backlight_device *bd)
 {
 	int level = bd->props.brightness;
 
-	if (level > MAX_LEVEL)
-		level = MAX_LEVEL;
-	else if (level < MIN_LEVEL)
-		level = MIN_LEVEL;
+	if ( level > bd->props.max_brightness )
+		level = bd->props.max_brightness;
+	else if (level < MIN_BL_LEVEL )
+		level = MIN_BL_LEVEL;
 
 	return level;
 }
 
 static int usb_fb_bl_update_status(struct backlight_device *bd)
 {
-	int level = backlight_get_brightness(bd);
-
-	if (bd->props.power == FB_BLANK_UNBLANK)
-		level = bd->props.brightness;
-	else if (bd->props.power == FB_BLANK_NORMAL)
-		level = (MAX_LEVEL * 0.2) * 3;
-	else if (bd->props.power == FB_BLANK_VSYNC_SUSPEND)
-		level = (MAX_LEVEL * 0.2) * 2;
-	else if (bd->props.power == FB_BLANK_HSYNC_SUSPEND)
-		level = MAX_LEVEL * 0.2;
-	else if (bd->props.power == FB_BLANK_POWERDOWN)
-		level = 0;
-
-	if (level > MAX_LEVEL)
-		level = MAX_LEVEL;
-	else if (level < MIN_LEVEL)
-		level = MIN_LEVEL;
-
 	struct usbfb_info *uinfo = bl_get_data(bd);
+	int level = bd->props.brightness;
+
+	if ( bd->props.power != uinfo->power ) {
+
+		if ( bd->props.power == FB_BLANK_UNBLANK )
+			bd->props.max_brightness = MAX_BL_LEVEL;
+		else if (bd->props.power == FB_BLANK_NORMAL )
+			bd->props.max_brightness = (MAX_BL_LEVEL * 0.2) * 3;
+		else if (bd->props.power == FB_BLANK_VSYNC_SUSPEND)
+			bd->props.max_brightness = (MAX_BL_LEVEL * 0.2) * 2;
+		else if (bd->props.power == FB_BLANK_HSYNC_SUSPEND)
+			bd->props.max_brightness = MAX_BL_LEVEL * 0.2;
+		else if (bd->props.power == FB_BLANK_POWERDOWN)
+			bd->props.max_brightness = 0;
+		else if (bd->props.power > FB_BLANK_POWERDOWN) {
+			bd->props.power = FB_BLANK_POWERDOWN;
+			bd->props.max_brightness = 0;
+		}
+
+		level = bd->props.max_brightness;
+		uinfo->power = bd->props.power;
+	}
+
+	if ( level < MIN_BL_LEVEL )
+		level = MIN_BL_LEVEL;
+	else if ( level > bd->props.max_brightness )
+		return -EINVAL;
+	else if ( level > MAX_BL_LEVEL )
+		level = MAX_BL_LEVEL;
 
 	uinfo->cmd[0] = 0x00;
 	uinfo->cmd[1] = 0x51;
@@ -459,16 +489,16 @@ static void usb_fb_bl_init(struct usbfb_info *uinfo)
 
 	memset(&props, 0, sizeof(struct backlight_properties));
 	props.type = BACKLIGHT_RAW;
-	props.max_brightness = MAX_LEVEL;
+	props.max_brightness = MAX_BL_LEVEL;
 	bd = backlight_device_register("usbfb_bl", dev, uinfo, &usb_fb_bl_ops, &props);
 
 	if (IS_ERR(bd)) {
-		uinfo->bl_dev = NULL;
+		info->bl_dev = NULL;
 		dev_err(dev, "unable to register backlight device\n");
 		return;
 	}
 
-	uinfo->bl_dev = bd;
+	info->bl_dev = bd;
 	bd->props.brightness = bd->props.max_brightness;
 	bd->props.fb_blank = FB_BLANK_UNBLANK;
 	bd->props.power = FB_BLANK_UNBLANK;
@@ -480,7 +510,8 @@ static void usb_fb_bl_init(struct usbfb_info *uinfo)
 
 static void usb_fb_bl_exit(struct usbfb_info *uinfo)
 {
-	struct backlight_device *bd = uinfo->bl_dev;
+	struct fb_info *info = uinfo->info;
+	struct backlight_device *bd = info->bl_dev;
 	struct device *dev = &uinfo->interface->dev;
 
 	if ( bd != NULL ) {
@@ -488,6 +519,7 @@ static void usb_fb_bl_exit(struct usbfb_info *uinfo)
 		dev_info(dev, "backlight unregistered\n");
 	}
 }
+#endif
 
 static int usbfb_probe(struct usb_interface *interface,
 		       const struct usb_device_id *id)
@@ -536,6 +568,9 @@ static int usbfb_probe(struct usb_interface *interface,
 	uinfo->width = 480;
 	uinfo->height = 800;
 	uinfo->margin = 0;
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
+	uinfo->power = FB_BLANK_UNBLANK;
+#endif
 
 	if (uinfo->screen_info == 0x00000005) {
 		uinfo->height = 854;
@@ -613,7 +648,9 @@ static int usbfb_probe(struct usb_interface *interface,
 		goto error_fb_release;
 	}
 
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
 	usb_fb_bl_init(uinfo);
+#endif
 
 	uinfo->task = kthread_run(usbfb_refresh_thread, uinfo, "usbfb");
 	if (IS_ERR(uinfo->task)) {
@@ -701,7 +738,9 @@ static void usbfb_disconnect(struct usb_interface *interface)
 			  uinfo->dma);
 
 	usb_fb_bl_exit(uinfo);
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
 	unregister_framebuffer(info);
+#endif
 	kfree(info->screen_buffer);
 	framebuffer_release(info);
 	kfree(uinfo);
