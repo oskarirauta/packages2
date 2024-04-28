@@ -737,10 +737,10 @@ static void usbfb_disconnect(struct usb_interface *interface)
 	usb_free_coherent(uinfo->udev, uinfo->data_size, uinfo->data,
 			  uinfo->dma);
 
-	usb_fb_bl_exit(uinfo);
 #if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
-	unregister_framebuffer(info);
+	usb_fb_bl_exit(uinfo);
 #endif
+	unregister_framebuffer(info);
 	kfree(info->screen_buffer);
 	framebuffer_release(info);
 	kfree(uinfo);
