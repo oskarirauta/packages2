@@ -28,7 +28,7 @@
 
 static int partial = 0;
 module_param(partial, int, 0660);
-MODULE_PARAM_DESC(partial, "set partial to 1 to enable partial updates");
+MODULE_PARM_DESC(partial, "set partial to 1 to enable partial updates");
 
 static char cmd_draw[12] = {
 	0x00, 0x2c, 0x00, 0x00, 0x00, 0x00,

@@ -28,7 +28,7 @@ define Package/buildroot-env
 		+perlbase-open +perlbase-if +perlbase-digest +perlbase-experimental \
 		+perlbase-autouse +perlbase-sys +perlbase-sort \
 		+perlbase-diagnostics +perlbase-time perlbase-json-pp \
-		+python3-lib2to3 +coreutils-join \
+		+perl-xml-parser +python3-lib2to3 +coreutils-join \
 		+re2 +colrm +perl-pods +zstd
 endef
 
