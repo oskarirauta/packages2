@@ -3,6 +3,10 @@
 static ssize_t partial_read(struct device* dev, struct device_attribute *attr, char *buf) {
 
 	struct mpro_device *mpro = dev_get_drvdata(dev);
+
+	if ( mpro -> partial < 0 )
+		return sprintf(buf, "not supported by this model, mpro chipset is required for partial updates\n");
+
 	return sprintf(buf, "%d\n", mpro -> partial);
 }
 

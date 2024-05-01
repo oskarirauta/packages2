@@ -186,6 +186,9 @@ void mpro_mode_config_setup(struct mpro_device *mpro) {
 		break;
 	}
 
+	if ( mpro -> screen <= 2 )
+		mpro -> partial = -1;
+
 	mpro->width = width;
 	mpro->height = height;
 	mpro->margin = margin;

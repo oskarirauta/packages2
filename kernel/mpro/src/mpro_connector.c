@@ -91,11 +91,7 @@ static const struct drm_connector_funcs mpro_conn_funcs = {
 int mpro_conn_init(struct mpro_device *mpro) {
 
 	drm_connector_helper_add(&mpro -> conn, &mpro_conn_helper_funcs);
-/*
-	struct drm_property *prop = drm_property_create_bool(mpro -> conn.dev, DRM_MODE_PROP_IMMUTABLE, "partial_updates");
-	if ( prop )
-		drm_object_attach_property(&mpro -> conn.base, prop, mpro -> partial);
-*/
+
 	return drm_connector_init(&mpro -> dev, &mpro -> conn,
 				  &mpro_conn_funcs, DRM_MODE_CONNECTOR_USB);
 }

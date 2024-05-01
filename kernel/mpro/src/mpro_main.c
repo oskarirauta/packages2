@@ -47,12 +47,12 @@ static int mpro_data_alloc(struct mpro_device *mpro) {
 
 	mpro -> data_size = block_size;
 
-	if ( mpro -> partial != 0 )
-		return 0;
+	if ( mpro -> partial < 1 ) {
 
-	cmd_draw[2] = (char)(block_size >> 0);
-	cmd_draw[3] = (char)(block_size >> 8);
-	cmd_draw[4] = (char)(block_size >> 16);
+		cmd_draw[2] = (char)(block_size >> 0);
+		cmd_draw[3] = (char)(block_size >> 8);
+		cmd_draw[4] = (char)(block_size >> 16);
+	}
 
 	return 0;
 }
@@ -60,7 +60,7 @@ static int mpro_data_alloc(struct mpro_device *mpro) {
 static int mpro_update_frame(struct mpro_device *mpro) {
 
 	struct usb_device *udev = mpro_to_usb_device(mpro);
-	int cmd_len = mpro -> partial == 0 ? 6 : 12;
+	int cmd_len = mpro -> partial < 1 ? 6 : 12;
 	int ret;
 
 	/* 0x40 USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE */
@@ -106,7 +106,7 @@ void mpro_fb_mark_dirty(struct iosys_map *src, struct drm_framebuffer *fb,
 	if ( !drm_dev_enter(fb -> dev, &idx))
 		return;
 
-	if ( mpro -> partial == 0 ) {
+	if ( mpro -> partial < 1 ) {
 
 		clip.x1 = 0;
 		clip.x2 = fb -> width;
@@ -173,7 +173,7 @@ static int mpro_usb_probe(struct usb_interface *interface,
 	if ( IS_ERR(mpro))
 		return PTR_ERR(mpro);
 	dev = &mpro -> dev;
-	mpro -> partial = partial == 0 ? 0 : 1;
+	mpro -> partial = partial > 0 ? 1 : 0;
 
 	mpro -> dmadev = usb_intf_get_dma_device(to_usb_interface(dev -> dev));
 	if ( !mpro -> dmadev )
@@ -268,5 +268,8 @@ static struct usb_driver mpro_usb_driver = {
 };
 
 module_usb_driver(mpro_usb_driver);
+MODULE_DESCRIPTION("VoCore screen DRM driver");
 MODULE_AUTHOR("ieiao <ieiao@outlook.com>");
+MODULE_AUTHOR("Oskari Rauta <oskari.rauta@gmail.com>");
 MODULE_LICENSE("GPL");
+MODULE_SOFTDEP("pre: usbhid");

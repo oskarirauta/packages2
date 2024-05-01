@@ -50,7 +50,7 @@ struct mpro_device {
 #if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) || IS_ENABLED(CONFIG_FB_BACKLIGHT)
 	int				bl_power;
 #endif
-	char				partial;
+	signed char			partial;
 };
 
 extern struct usb_device *mpro_to_usb_device(struct mpro_device *mpro);

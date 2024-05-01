@@ -12,7 +12,7 @@ int mpro_send_command(struct mpro_device *mpro, void* cmd, unsigned int len) {
 	if ( len == 0 )
 		return 0;
 
-	if ( mpro -> partial == 1 ) {
+	if ( mpro -> partial >= 1 ) {
 
 		if ( len > 64 )
 			return -EINVAL;
