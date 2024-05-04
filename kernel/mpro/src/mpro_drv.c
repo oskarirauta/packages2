@@ -30,6 +30,10 @@ static int partial = 0;
 module_param(partial, int, 0660);
 MODULE_PARM_DESC(partial, "set partial to 1 to enable partial updates");
 
+static int flipx = 0;
+module_param(flipx, int, 0660);
+MODULE_PARM_DESC(flipx, "set flipx to 1 to flip image on x axis");
+
 static char cmd_draw[12] = {
 	0x00, 0x2c, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -78,8 +82,9 @@ static int mpro_update_frame(struct mpro_device *mpro) {
 	return 0;
 }
 
+
 static int mpro_buf_copy(void *dst, struct iosys_map *src_map, struct drm_framebuffer *fb,
-			 struct drm_rect *clip) {
+			 struct drm_rect *clip, bool flipped) {
 
 	int ret;
 	struct iosys_map dst_map;
@@ -90,7 +95,11 @@ static int mpro_buf_copy(void *dst, struct iosys_map *src_map, struct drm_frameb
 	if ( ret )
 		return ret;
 
-	drm_fb_xrgb8888_to_rgb565(&dst_map, NULL, src_map, fb, clip, false);
+	if ( flipped )
+		drm_fb_xrgb8888_to_rgb565_flipped(&dst_map, NULL, src_map, fb, clip, false);
+	else
+		drm_fb_xrgb8888_to_rgb565(&dst_map, NULL, src_map, fb, clip, false);
+
 	drm_gem_fb_end_cpu_access(fb, DMA_FROM_DEVICE);
 
 	return 0;
@@ -113,12 +122,12 @@ void mpro_fb_mark_dirty(struct iosys_map *src, struct drm_framebuffer *fb,
 		clip.y1 = 0;
 		clip.y2 = fb -> height;
 
-		ret = mpro_buf_copy(mpro -> data, src, fb, &clip);
+		ret = mpro_buf_copy(mpro -> data, src, fb, &clip, mpro -> flip_x);
 		if ( ret )
 			goto err_msg;
 	} else {
 
-		ret = mpro_buf_copy(mpro -> data, src, fb, rect);
+		ret = mpro_buf_copy(mpro -> data, src, fb, rect, mpro -> flip_x);
 		if ( ret )
 			goto err_msg;
 
@@ -174,6 +183,10 @@ static int mpro_usb_probe(struct usb_interface *interface,
 		return PTR_ERR(mpro);
 	dev = &mpro -> dev;
 	mpro -> partial = partial > 0 ? 1 : 0;
+	mpro -> flip_x = flipx > 0 ? 1 : 0;
+
+	if ( mpro -> flip_x )
+		drm_warn(dev, "image flip on x axis is enabled");
 
 	mpro -> dmadev = usb_intf_get_dma_device(to_usb_interface(dev -> dev));
 	if ( !mpro -> dmadev )

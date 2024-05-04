@@ -51,6 +51,7 @@ struct mpro_device {
 	int				bl_power;
 #endif
 	signed char			partial;
+	signed char			flip_x;
 };
 
 extern struct usb_device *mpro_to_usb_device(struct mpro_device *mpro);
@@ -75,5 +76,9 @@ extern int mpro_send_command(struct mpro_device *mpro, void* cmd, unsigned int l
 extern void mpro_fb_mark_dirty(struct iosys_map *src,
 				struct drm_framebuffer *fb,
 				struct drm_rect *rect);
+
+extern void drm_fb_xrgb8888_to_rgb565_flipped(struct iosys_map *dst, const unsigned int *dst_pitch,
+					      const struct iosys_map *src, const struct drm_framebuffer *fb,
+					      const struct drm_rect *clip, bool swab);
 
 #endif

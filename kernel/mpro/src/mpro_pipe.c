@@ -65,8 +65,16 @@ static const uint64_t mpro_pipe_modifiers[] = {
 
 int mpro_pipe_init(struct mpro_device *mpro) {
 
-	return drm_simple_display_pipe_init(&mpro->dev, &mpro->pipe,
-					    &mpro_pipe_funcs, mpro_pipe_formats,
-					    ARRAY_SIZE(mpro_pipe_formats),
-					    mpro_pipe_modifiers, &mpro->conn);
+	int ret;
+
+	ret = drm_simple_display_pipe_init(&mpro->dev, &mpro->pipe,
+					   &mpro_pipe_funcs, mpro_pipe_formats,
+					   ARRAY_SIZE(mpro_pipe_formats),
+					   mpro_pipe_modifiers, &mpro->conn);
+	if ( ret )
+		return ret;
+
+	drm_plane_enable_fb_damage_clips(&mpro -> pipe.plane);
+
+	return 0;
 }
