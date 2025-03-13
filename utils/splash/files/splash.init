@@ -6,7 +6,7 @@ STOP=5
 
 boot() {
 	/usr/bin/splash --image=splash --console --reset
-	/usr/bin/splash --message="System ready" --xpoint=-12 -y750 --properties="fontcolor=#ffffff,fontsize=60,fontfile=regular"
+	/usr/bin/splash --message="System ready" --xpoint=-12 -y680 --properties="fontcolor=#ffffff,fontsize=60,fontfile=regular"
 	/usr/bin/splash --exit=5
 	echo -e '\033[?25h' > /dev/tty1
 }
@@ -16,5 +16,5 @@ shutdown() {
 		chvt 1
 	echo -e '\033[?25l' > /dev/tty1
 	/usr/bin/splash --image=splash --reset
-	/usr/bin/splash --message="Shutting down" --xpoint=-12 -y750 --properties="fontcolor=#ffffff,fontsize=60,fontfile=regular"
+	/usr/bin/splash --message="Shutting down" --xpoint=-12 -y680 --properties="fontcolor=#ffffff,fontsize=60,fontfile=regular"
 }
