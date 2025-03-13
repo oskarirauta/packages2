@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=buildroot-env
-PKG_VERSION:=20240213
+PKG_VERSION:=20250313
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
@@ -14,30 +14,26 @@ define Package/buildroot-env
   TITLE:=Openwrt buildroot environment
   DEPENDS:= \
 		+libuargp +musl-fts +musl-obstack +libzstd +libc-stubs +libstdcpp \
-		+pkg-config +make +gcc +diffutils +autoconf +automake +check +git +git-http +patch +libtool-bin \
+		+pkg-config +make +gcc +diffutils +automake +check +git +git-http +patch +libtool-bin \
 		+grep +rsync +tar +python3 +getopt +procps-ng-ps +gawk +sed +xz +unzip +gzip +bzip2 +flock +wget-ssl \
-		+perl +perlbase-findbin +perlbase-pod +perlbase-storable +perlbase-feature +perlbase-b +python3 \
 		+coreutils-nohup +coreutils-install +coreutils-sort +coreutils-ls +coreutils-realpath +coreutils-stat \
 		+coreutils-nproc +coreutils-od +coreutils-mkdir +coreutils-date +coreutils-comm +coreutils-printf \
 		+coreutils-ln +coreutils-cp +coreutils-split +coreutils-csplit +coreutils-cksum +coreutils-expr \
-		+coreutils-tr +coreutils-test +coreutils-uniq +coreutils-fmt +rev +curl \
+		+coreutils-tr +coreutils-test +coreutils-uniq +coreutils-fmt +coreutils-join +rev +curl \
 		+libncurses-dev +zlib-dev +xz-utils +tar +ldconfig-script +pax-utils \
 		+bash +quilt +htop +whereis +less +file +findutils +findutils-locate +chattr +lsattr +xxd \
+		+perlbase-findbin +perlbase-pod +perlbase-storable +perlbase-feature +perlbase-b \
 		+perlbase-ipc +perlbase-module +perlbase-extutils \
-		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype \
+		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype +perlbase-json-pp \
 		+perlbase-open +perlbase-if +perlbase-digest +perlbase-experimental \
-		+perlbase-autouse +perlbase-sys +perlbase-sort \
-		+perlbase-diagnostics +perlbase-time perlbase-json-pp \
-		+perl-xml-parser +perl-pods +python3-lib2to3 +coreutils-join \
-		+re2 +colrm +zstd
+		+perlbase-autouse +perlbase-sys +perlbase-sort +perlbase-diagnostics +perlbase-time \
+		+perl-xml-parser +perl-pods +python3-lib2to3 \
+		+perl +autoconf +re2 +colrm +zstd
 endef
 
 define Package/buildroot-env/description
   Provides environment suitable to build openwrt on openwrt with
   depencies and necessary missing header files.
-
-  You also will need some pod files. To include them, make sure you
-  have selected to include Perl tests in perl's configuration.
 
   Requires unstripped build. Further documentation is available at
   https://openwrt.org/docs/guide-developer/toolchain/building_openwrt_on_openwrt
