@@ -11,7 +11,7 @@ PKG_HASH:=e7ebc26a6ca21259f1398076265bb1d1b6384bc54f283fdceda7849db431d21e
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
-PKG_BUILD_DEPENDS:=
+PKG_BUILD_DEPENDS:=freetype-dev
 PKG_RUNTIME_DEPENDS:=
 
 define Package/splash/config
