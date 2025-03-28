@@ -1,0 +1,32 @@
+--- a/src/common.c
++++ b/src/common.c
+@@ -22,6 +22,7 @@
+ #include <sys/mman.h>
+ #include <dirent.h>
+ #include <errno.h>
++#include <sys/sysmacros.h>
+ 
+ #include "common.h"
+ #include "render.h"
+--- a/src/daemon_cmd.c
++++ b/src/daemon_cmd.c
+@@ -24,6 +24,8 @@
+ #include "common.h"
+ #include "daemon.h"
+ 
++void list_ringadd(list *l, void *obj);
++
+ /*
+  * 'exit' command handler.
+  */
+--- a/src/libfbsplashrender.c
++++ b/src/libfbsplashrender.c
+@@ -35,6 +35,8 @@ int fd_tty[MAX_NR_CONSOLES];
+ struct fb_data fbd;
+ sendian_t endianess;
+ 
++void obj_visibility_set(stheme_t *theme, obj *o, bool visible);
++
+ static void obj_free(obj *o)
+ {
+ 	if (!o)
