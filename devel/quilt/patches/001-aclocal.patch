@@ -1,9 +1,7 @@
 Add the aclocal.m4 as acinclude.m4
 
-Index: quilt-0.46/acinclude.m4
-===================================================================
 --- /dev/null
-+++ quilt-0.46/acinclude.m4
++++ b/acinclude.m4
 @@ -0,0 +1,119 @@
 +dnl Allow configure to specify a specific binary
 +dnl 1: Environment variable
