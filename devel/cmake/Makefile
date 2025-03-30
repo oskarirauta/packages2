@@ -24,7 +24,7 @@ define Package/cmake
   SECTION:=devel
   CATEGORY:=Development
   TITLE:=cmake
-  DEPENDS:=@TARGET_x86_64 +libstdcpp +libncurses +libopenssl
+  DEPENDS:=@TARGET_x86_64 +libstdcpp +libncurses +libopenssl +libidn2
 endef
 
 define Package/cmake/description
