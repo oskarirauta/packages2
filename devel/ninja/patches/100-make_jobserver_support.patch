@@ -20,7 +20,7 @@ Documentation for GNU make jobserver
 
 --- a/configure.py
 +++ b/configure.py
-@@ -543,11 +543,13 @@ for name in ['build',
+@@ -537,11 +537,13 @@ for name in ['build',
               'state',
               'status',
               'string_piece_util',
@@ -34,7 +34,7 @@ Documentation for GNU make jobserver
                   'includes_normalize-win32',
                   'msvc_helper-win32',
                   'msvc_helper_main-win32']:
-@@ -556,7 +558,9 @@ if platform.is_windows():
+@@ -550,7 +552,9 @@ if platform.is_windows():
          objs += cxx('minidump-win32', variables=cxxvariables)
      objs += cc('getopt')
  else:
@@ -45,14 +45,6 @@ Documentation for GNU make jobserver
  if platform.is_aix():
      objs += cc('getopt')
  if platform.is_msvc():
-@@ -639,6 +643,7 @@ if gtest_src_dir:
-         'string_piece_util_test',
-         'subprocess_test',
-         'test',
-+        'tokenpool_test',
-         'util_test',
-     ]
-     if platform.is_windows():
 --- a/src/build.cc
 +++ b/src/build.cc
 @@ -39,6 +39,7 @@
