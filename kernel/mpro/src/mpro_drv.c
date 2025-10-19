@@ -11,7 +11,7 @@
 #include <drm/drm_atomic_state_helper.h>
 #include <drm/drm_gem_shmem_helper.h>
 #include <drm/drm_framebuffer.h>
-#include <drm/drm_fbdev_generic.h>
+#include <drm/drm_fbdev_ttm.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_format_helper.h>
 #include <drm/drm_fourcc.h>
@@ -243,7 +243,7 @@ static int mpro_usb_probe(struct usb_interface *interface,
 	if ( ret )
 		goto err_put_device;
 
-	drm_fbdev_generic_setup(dev, 0);
+	drm_fbdev_ttm_setup(dev, 0);
 	mpro_bl_init(mpro);
 	mpro_touch_init(mpro);
 
