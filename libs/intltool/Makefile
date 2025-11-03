@@ -1,8 +1,3 @@
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=intltool
@@ -14,23 +9,16 @@ PKG_SOURCE_URL:=https://launchpad.net/intltool/trunk/$(PKG_VERSION)/+download
 PKG_HASH:=67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 
+PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
 
-HOST_BUILD_DEPENDS:=perl/host
-PKG_HOST_ONLY:=1
-HOST_FIXUP:=autoreconf
-
-include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
-
-HOST_CONFIGURE_VARS+= \
-        PATH="$(STAGING_DIR_HOSTPKG)/bin:$(STAGING_DIR_HOSTPKG)/usr/bin:$(PATH)"
 
 define Package/intltool
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=set of tools to centralize translation using GNU gettext
   URL:=https://www.freedesktop.org/wiki/Software/intltool
-  BUILDONLY:=1
 endef
 
 define Package/intltool/description
@@ -38,5 +26,14 @@ define Package/intltool/description
   file formats using GNU gettext-compatible PO files.
 endef
 
+define Package/intltool/install
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/aclocal
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/intltool-extract $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/intltool-merge $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/intltool-prepare $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/intltool-update $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/intltoolize $(1)/usr/bin/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/aclocal/intltool.m4 $(1)/usr/share/aclocal/
+endef
+
 $(eval $(call BuildPackage,intltool))
-$(eval $(call HostBuild))
