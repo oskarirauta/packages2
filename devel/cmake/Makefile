@@ -42,10 +42,12 @@ CONFIGURE_ARGS := \
 	--system-zstd \
 	--generator=Ninja
 
+TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+
 define Package/cmake/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/share/aclocal $(1)/usr/share/cmake-$(PKG_VERSION_MAJOR)
 	$(INSTALL_DIR) $(1)/usr/share/cmake-$(PKG_VERSION_MAJOR)/{Help,Modules,Templates,include}
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{ccmake,cmake,cpack,ctest} $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{cmake,cpack,ctest} $(1)/usr/bin/
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/aclocal/cmake.m4 $(1)/usr/share/aclocal/
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION_MAJOR)/Help/** $(1)/usr/share/cmake-$(PKG_VERSION_MAJOR)/Help/
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/cmake-$(PKG_VERSION_MAJOR)/Modules/** $(1)/usr/share/cmake-$(PKG_VERSION_MAJOR)/Modules/
