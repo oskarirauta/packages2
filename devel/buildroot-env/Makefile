@@ -14,7 +14,7 @@ define Package/buildroot-env
   TITLE:=Openwrt buildroot environment
   DEPENDS:= \
 		+libuargp +musl-fts +musl-obstack +libzstd +libc-stubs +libstdcpp \
-		+pkg-config +make +gcc +diffutils +automake +check +git +git-http +patch +libtool-bin \
+		+pkgconf +make +gcc +diffutils +automake +check +git +git-http +patch +libtool-bin \
 		+grep +rsync +tar +python3 +getopt +procps-ng-ps +gawk +sed +xz +unzip +gzip +bzip2 +flock +wget-ssl \
 		+coreutils-nohup +coreutils-install +coreutils-sort +coreutils-ls +coreutils-realpath +coreutils-stat \
 		+coreutils-nproc +coreutils-od +coreutils-mkdir +coreutils-date +coreutils-comm +coreutils-printf \
@@ -27,7 +27,7 @@ define Package/buildroot-env
 		+perlbase-version +perlbase-dirhandle +perlbase-autosplit +perlbase-ostype +perlbase-json-pp \
 		+perlbase-open +perlbase-if +perlbase-digest +perlbase-experimental \
 		+perlbase-autouse +perlbase-sys +perlbase-sort +perlbase-diagnostics +perlbase-time \
-		+perl-xml-parser +perl-pods +python3-lib2to3 \
+		+perl-xml-parser +perl-pods \
 		+perl +autoconf +re2 +colrm +zstd
 endef
 
