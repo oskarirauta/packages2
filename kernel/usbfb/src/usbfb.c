@@ -500,7 +500,7 @@ static void usb_fb_bl_init(struct usbfb_info *uinfo)
 
 	info->bl_dev = bd;
 	bd->props.brightness = bd->props.max_brightness;
-	bd->props.fb_blank = FB_BLANK_UNBLANK;
+	// bd->props.fb_blank = FB_BLANK_UNBLANK;
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
