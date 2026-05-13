@@ -34,6 +34,8 @@ endef
 define Build/Configure
 endef
 
+TARGET_CFLAGS += -Wno-template-body
+
 ifeq ($(CONFIG_SYSTEMBUS_SELINUX),y)
 MAKE_VARS += selinux=1
 endif
