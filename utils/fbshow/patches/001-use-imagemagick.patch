@@ -1,0 +1,20 @@
+--- a/fbshow.c
++++ b/fbshow.c
+@@ -12,7 +12,7 @@
+ #include<assert.h>
+ #include<ft2build.h>
+ #include FT_FREETYPE_H
+-#include<wand/magick_wand.h>
++#include<MagickWand/MagickWand.h>
+ 
+ #define BUFSIZE 8192
+ 
+@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
+ #ifdef DEBUG
+       fprintf(stderr, "Resizing from (%d,%d) to (%d,%d)\n", im_width, im_height, new_width, new_height);
+ #endif
+-      if (MagickResizeImage(m_wand,new_width,new_height,LanczosFilter,0.5) == MagickFalse) {
++      if (MagickResizeImage(m_wand,new_width,new_height,LanczosFilter) == MagickFalse) {
+ 	fprintf(stderr, "Resize failed\n");
+ 	return -21;
+       }
