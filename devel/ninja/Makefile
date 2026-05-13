@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ninja
-PKG_VERSION:=1.12.1
+PKG_VERSION:=1.13.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/ninja-build/ninja/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=821bdff48a3f683bc4bb3b6f0b5fe7b2d647cf65d52aeb63328c91a6c6df285a
+PKG_HASH:=974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17
 
 PKG_LICENSE_FILES:=COPYING
 
@@ -35,8 +35,11 @@ define Build/Compile
 		CXX="$(TARGET_CXX)" \
 		CXXFLAGS="$(TARGET_CXXFLAGS)" \
 		LDFLAGS="$(TARGET_LDFLAGS)" \
-		$(STAGING_DIR_HOST)/bin/$(PYTHON) configure.py --bootstrap $(CONFIGURE_ARGS)
+		$(STAGING_DIR_HOST)/bin/$(PYTHON) configure.py $(CONFIGURE_ARGS)
+	cd $(PKG_BUILD_DIR) && \
+		$(STAGING_DIR_HOST)/bin/ninja
 endef
+
 
 define Package/ninja/install
 	$(INSTALL_DIR) $(1)/bin
