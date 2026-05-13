@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += beada-bl.o
+
+beada-bl-y := beada-backlight-drv.o   \
+              beada-backlight-bl.o    \
+              beada-backlight-pm.o    \
+              beada-backlight-sysfs.o

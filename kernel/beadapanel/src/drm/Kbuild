@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += beada-drm.o
+
+beada-drm-y := beada-drm-drv.o    \
+               beada-drm-kms.o    \
+               beada-drm-plane.o  \
+               beada-drm-conn.o   \
+               beada-drm-vblank.o \
+               beada-drm-color.o  \
+               beada-drm-edid.o   \
+               beada-drm-pm.o     \
+               beada-drm-sysfs.o
