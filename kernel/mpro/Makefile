@@ -16,10 +16,7 @@ include $(INCLUDE_DIR)/package.mk
 define KernelPackage/mpro
   SUBMENU:=$(VIDEO_MENU)
   TITLE:=VoCore MPro driver
-  DEPENDS:=@DISPLAY_SUPPORT +kmod-backlight \
-	+kmod-drm-dma-helper +kmod-drm-ttm-helper \
-	+kmod-drm-display-helper +kmod-drm-client-lib \
-	+kmod-drm +kmod-drm-ttm +kmod-lib-lz4 +kmod-lib-lz4hc
+  DEPENDS:=@DISPLAY_SUPPORT +kmod-backlight +kmod-drm +kmod-drm-dma-helper +kmod-drm-client-lib +kmod-drm-display-helper +kmod-lib-lz4 +kmod-lib-lz4hc
   FILES:=$(PKG_BUILD_DIR)/mpro.ko $(PKG_BUILD_DIR)/drm/mpro_drm.ko $(PKG_BUILD_DIR)/backlight/mpro_backlight.ko $(PKG_BUILD_DIR)/touchscreen/mpro_touchscreen.ko
   AUTOLOAD:=$(call AutoProbe,mpro mpro_drm mpro_backlight mpro_touchscreen)
 endef
