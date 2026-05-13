@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=refind
 PKG_VERSION:=0.14.2
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=1
 
 PKG_SOURCE:=refind-$(if $(CONFIG_REFIND_TIANOCORE),bin,bin-gnuefi)-$(PKG_VERSION).zip
 PKG_SOURCE_URL:=https://downloads.sourceforge.net/project/refind/$(PKG_VERSION)
