@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += mpro_drm.o
+
+mpro_drm-y := mpro_drm_main.o  \
+              mpro_drm_pipe.o  \
+              mpro_drm_color.o \
+              mpro_drm_sysfs.o \
+              mpro_drm_edid.o
+
+ccflags-y := -I$(src)/..

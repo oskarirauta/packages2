@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += mpro.o
+obj-m += drm/
+obj-m += touchscreen/
+obj-m += backlight/
+
+mpro-y := mpro_main.o     \
+          mpro_protocol.o \
+          mpro_pipeline.o \
+          mpro_model.o    \
+          mpro_screen.o   \
+          mpro_pm.o       \
+          mpro_color.o    \
+          mpro_touch.o    \
+          mpro_sysfs.o
