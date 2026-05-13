@@ -32,7 +32,8 @@ CMAKE_OPTIONS += \
 	-DMOLD_LTO=ON \
 	-DMOLD_MOSTLY_STATIC=ON \
 	-DMOLD_USE_SYSTEM_MIMALLOC=OFF \
-	-DMOLD_USE_SYSTEM_TBB=OFF
+	-DMOLD_USE_SYSTEM_TBB=OFF \
+	-DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 define Package/mold/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib/mold $(1)/usr/libexec/mold
