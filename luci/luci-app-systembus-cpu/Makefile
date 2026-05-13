@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-systembus-cpu
 PKG_VERSION:=0.91
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=2
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 
 LUCI_TITLE:=Systembus cpu statistics
