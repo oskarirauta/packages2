@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += ax206.o
+obj-m += drm/
+obj-m += bl/
+
+ax206-y := ax206-drv.o \
+           ax206-usb.o

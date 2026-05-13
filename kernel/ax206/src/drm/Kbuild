@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += ax206-drm.o
+
+ax206-drm-y := ax206-drm-drv.o      \
+               ax206-drm-plane.o    \
+               ax206-drm-rotation.o \
+               ax206-drm-stats.o    \
+               ax206-drm-sysfs.o    \
+               ax206-drm-pm.o
+
+ccflags-y := -I$(src)/..

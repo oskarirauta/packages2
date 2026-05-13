@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0
+
+obj-m += ax206-bl.o
+
+ax206-bl-y := ax206-bl-drv.o
+
+ccflags-y := -I$(src)/..
