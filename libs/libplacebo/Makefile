@@ -44,8 +44,10 @@ MESON_ARGS += \
 	-Dunwind=disabled
 
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include/libplacebo $(1)/usr/lib $(1)/usr/lib/pkgconfig
+	$(INSTALL_DIR) $(1)/usr/include/libplacebo $(1)/usr/include/libplacebo/shaders $(1)/usr/include/libplacebo/utils $(1)/usr/lib $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/libplacebo/*.h $(1)/usr/include/libplacebo/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/libplacebo/shaders/*.h $(1)/usr/include/libplacebo/shaders/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/libplacebo/utils/*.h $(1)/usr/include/libplacebo/utils/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.a $(1)/usr/lib/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc $(1)/usr/lib/pkgconfig/
