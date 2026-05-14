@@ -51,6 +51,7 @@ CMAKE_OPTIONS += \
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/uchardet $(1)/usr/lib $(1)/usr/lib/cmake/uchardet $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/uchardet/*.h $(1)/usr/include/uchardet/
+	$(LN) -s uchardet/uchardet.h $(1)/usr/include/uchardet.h
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.a $(1)/usr/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cmake/uchardet/*.cmake $(1)/usr/lib/cmake/uchardet/
