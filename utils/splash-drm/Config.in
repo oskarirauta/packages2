@@ -1,0 +1,12 @@
+menu "Configuration"
+	depends on PACKAGE_splash-drm
+
+config SPLASH_DRM_FONTS
+	bool "include fonts"
+	default y
+
+config SPLASH_DRM_SAMPLE_IMAGE
+	bool "include sample image"
+	default y
+
+endmenu
