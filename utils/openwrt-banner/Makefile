@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openwrt-banner
-PKG_VERSION:=1.2.0
+PKG_VERSION:=1.3.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/openwrt-banner/releases/download/$(PKG_VERSION)/
-PKG_HASH:=479602e99c98709e08ffa44a9f35d02920bbab47ce629621dac0da9ae9a79f82
+PKG_HASH:=121e3d4ed99607fd4de71b264b641f4bb0439f86b0e4389c9b3bc8449d91d483
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
