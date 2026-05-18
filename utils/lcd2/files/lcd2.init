@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+
+START=89
+
+USE_PROCD=1
+NAME=lcd2
+PROG=/usr/bin/lcd2
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$PROG" -f /etc/lcd2.conf
+	procd_close_instance
+}
+
+reload_service() {
+	procd_send_signal $PROG
+}
