@@ -16,10 +16,6 @@ PKG_RUNTIME_DEPENDS:=
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/splash-drm/config
-  source "$(SOURCE)/Config.in"
-endef
-
 define Package/splash-drm
   SECTION:=utils
   CATEGORY:=Utilities
@@ -44,14 +40,6 @@ define Package/splash-drm/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/splash-drm $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/splash-ctl $(1)/usr/bin/
-ifeq ($(CONFIG_SPLASH_DRM_FONTS),y)
-	$(INSTALL_DIR) $(1)/usr/share/splash/fonts
-	$(INSTALL_DATA) ./files/fonts/** $(1)/usr/share/splash/fonts/
-endif
-ifeq ($(CONFIG_SPLASH_DRM_SAMPLE_IMAGE),y)
-	$(INSTALL_DIR) $(1)/usr/share/splash/images
-	$(INSTALL_DATA) ./files/openwrt.png $(1)/usr/share/splash/images/splash.png
-endif
 endef
 
 $(eval $(call BuildPackage,splash-drm))
