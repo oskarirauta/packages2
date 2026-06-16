@@ -39,12 +39,29 @@ define Package/splash/description
   Splash is a graphical term for representation of boot process.
 endef
 
+define Package/splash-files
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=Bootsplash logo and fonts
+  DEPENDS:=
+endef
+
+define Package/splash-files/description
+  This package contains a "default" openwrt bootsplash logo and
+  some simple fonts. Can be shared with both, splash and splash-drm.
+endef
+
 define Package/splash-static
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Boot splash (static build)
   DEPENDS:=
   VARIANT:=static
+endef
+
+define Package/splash-static/description
+  Splash is a graphical term for representation of boot process.
+  This is static build version.
 endef
 
 define Package/splash-init
@@ -91,6 +108,12 @@ define Package/splash-static/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/splash $(1)/usr/bin/
 endef
 
+define Package/splash-files/install
+	$(INSTALL_DIR) $(1)/usr/share/splash/images $(1)/usr/share/splash/fonts
+	$(INSTALL_DATA) ./files/openwrt.png $(1)/usr/share/splash/images/splash.png
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/res/fonts/*.ttf $(1)/usr/share/splash/fonts/
+endef
+
 define Package/splash-init/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/splash.init $(1)/etc/init.d/splash
@@ -99,3 +122,4 @@ endef
 $(eval $(call BuildPackage,splash))
 $(eval $(call BuildPackage,splash-static))
 $(eval $(call BuildPackage,splash-init))
+$(eval $(call BuildPackage,splash-files))
