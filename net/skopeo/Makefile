@@ -31,7 +31,12 @@ define Package/skopeo/description
 endef
 
 MAKE_VARS += \
-	DISABLE_DOCS=1
+	DISABLE_DOCS=1 \
+	PKG_CONFIG="$(STAGING_DIR_HOST)/bin/pkg-config" \
+	PKG_CONFIG_PATH="$(STAGING_DIR)/usr/lib/pkgconfig" \
+	STAGING_PREFIX="$(STAGING_DIR)/usr" \
+	CGO_CFLAGS="$(TARGET_CFLAGS) -I$(STAGING_DIR)/usr/include" \
+	CGO_LDFLAGS="$(TARGET_LDFLAGS) -L$(STAGING_DIR)/usr/lib"
 
 MAKE_ARGS += bin/skopeo
 
