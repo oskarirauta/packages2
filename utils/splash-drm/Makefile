@@ -28,7 +28,7 @@ define Package/splash-drm/description
   initramfs -> rootfs change in memory. Static build to avoid depends.
 endef
 
-TARGET_CFLAGS += -I$(PKG_BUILD_DIR) -I$(PKG_BUILD_DIR)/include -I$(STAGING_DIR)/usr/include/libdrm \
+TARGET_CFLAGS += -I$(PKG_BUILD_DIR) -I$(PKG_BUILD_DIR)/include -I$(PKG_BUILD_DIR)/qrcodegen/c -I$(STAGING_DIR)/usr/include/libdrm \
 		 -O2 -Wall -Wextra -std=c99 -D_GNU_SOURCE -Wno-unused-function -static
 
 TARGET_LDFLAGS += -lm -static
