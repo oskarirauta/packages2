@@ -1,0 +1,21 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2013-2014 OpenWrt.org
+
+START=99
+STOP=2
+
+DAEMON=/usr/bin/splash-drm
+PROG=/usr/bin/splash-ctl
+
+boot() {
+	$PROG '{"cmd":"resume"}'
+	$PROG '{"cmd":"text","id":"0","text":"System ready"}'
+	$PROG '{"cmd":"exit","delay":4}'
+}
+
+shutdown() {
+	$DAEMON /dev/dri/card0 \
+		--fork --timeout 120 \
+		--config '{"fonts": [{"slot": 0, "path": "regular.ttf", "size": 24},{"slot": 1, "path": "bold.ttf", "size": 24}]}' \
+		--cmds '[{"cmd":"bg_color","color":"#000"},{"cmd":"image","path":"splash.png","mode":3},{"cmd":"text","id":0,"font":0,"y":"70%","size":76,"shadow":1,"text":"Shutting down"}]'
+}
