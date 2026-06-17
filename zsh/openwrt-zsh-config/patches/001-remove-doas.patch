@@ -1,0 +1,11 @@
+--- a/zshrc.d/50-command-not-found.zsh
++++ b/zshrc.d/50-command-not-found.zsh
+@@ -37,7 +37,7 @@ function command_not_found_handler() {
+ 
+ 		(( ${#pkgs} == 1 )) || pkgname='<selected package>'
+ 		print ''
+-		print "${fg_bold[yellow]}Hint:$reset_color try installing with: ${fg[yellow]}doas apk add ${pkgname}$reset_color"
++		print "${fg_bold[yellow]}Hint:$reset_color try installing with: ${fg[yellow]}apk add ${pkgname}$reset_color"
+ 	else
+ 		print "zsh: command not found: $cmd"
+ 	fi

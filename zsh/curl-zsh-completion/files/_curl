@@ -1,0 +1,286 @@
+#compdef curl
+
+# curl zsh completion
+
+local curcontext="$curcontext" state state_descr line
+typeset -A opt_args
+
+local rc=1
+
+_arguments -C -S \
+  {-X,--request}'[Specify request method to use]':'<method>':'(DELETE GET HEAD POST PUT)' \
+  --ssl-sessions'[Load/save SSL session tickets from/to this file]':'<filename>':_files \
+  {-c,--cookie-jar}'[Save cookies to <filename> after operation]':'<filename>':_files \
+  {-D,--dump-header}'[Write the received headers to <filename>]':'<filename>':_files \
+  {-y,--speed-time}'[Trigger '\''speed-limit'\'' abort after this time]':'<seconds>' \
+  --abstract-unix-socket'[Connect via abstract Unix domain socket]':'<path>':_files \
+  --connect-to'[Connect to host2 instead of host1]':'<HOST1\:PORT1\:HOST2\:PORT2>' \
+  --proxy-capath'[CA directory to verify proxy against]':'<dir>':'_path_files -/' \
+  {-E,--cert}'[Client certificate file and password]':'<certificate[\:password]>' \
+  --proxy-pinnedpubkey'[FILE/HASHES public key to verify proxy with]':'<hashes>' \
+  --resolve'[Resolve host+port to address]':'<[+]host\:port\:addr[,addr]...>' \
+  --aws-sigv4'[AWS V4 signature auth]':'<provider1[\:prvdr2[\:reg[\:srv]]]>' \
+  --socks5-hostname'[SOCKS5 proxy, pass hostname to proxy]':'<host[\:port]>' \
+  {-b,--cookie}'[Send cookies from string/load from file]':'<data|filename>' \
+  --ftp-method'[Control CWD usage]':'<method>':'(multicwd nocwd singlecwd)' \
+  --proto-default'[Use PROTOCOL for any URL missing a scheme]':'<protocol>' \
+  --proxy-cacert'[CA certificates to verify proxy against]':'<file>':_files \
+  --socks5-gssapi-service'[SOCKS5 proxy service name for GSS-API]':'<name>' \
+  --capath'[CA directory to verify peer against]':'<dir>':'_path_files -/' \
+  --ftp-alternative-to-user'[String to replace USER \[name\]]':'<command>' \
+  --libcurl'[Generate libcurl code for this command line]':'<file>':_files \
+  --unix-socket'[Connect through this Unix domain socket]':'<path>':_files \
+  {-T,--upload-file}'[Transfer local FILE to destination]':'<file>':_files \
+  --hostpubsha256'[Acceptable SHA256 hash of host public key]':'<sha256>' \
+  --proxy-ciphers'[TLS 1.2 (1.1, 1.0) ciphers to use for proxy]':'<list>' \
+  --proxy-tlsauthtype'[TLS authentication type for HTTPS proxy]':'<type>' \
+  --request-target'[Specify the target for this request]':'<path>':_files \
+  --etag-save'[Parse incoming ETag and save to a file]':'<file>':_files \
+  --proxy-cert-type'[Client certificate type for HTTPS proxy]':'<type>' \
+  --proxy-pass'[Passphrase for private key for HTTPS proxy]':'<phrase>' \
+  --sasl-authzid'[Identity for SASL PLAIN authentication]':'<identity>' \
+  --suppress-connect-headers'[Suppress proxy CONNECT response headers]' \
+  --trace-ascii'[Like --trace, but without hex output]':'<file>':_files \
+  {-Q,--quote}'[Send command(s) to server before transfer]':'<command>' \
+  --alt-svc'[Enable alt-svc with this cache file]':'<filename>':_files \
+  --expect100-timeout'[How long to wait for 100-continue]':'<seconds>' \
+  --location-trusted'[As --location, but send secrets to other hosts]' \
+  --parallel-max'[Maximum concurrency for parallel transfers]':'<num>' \
+  {-j,--junk-session-cookies}'[Ignore session cookies read from file]' \
+  --dns-ipv4-addr'[IPv4 address to use for DNS requests]':'<address>' \
+  --dns-ipv6-addr'[IPv6 address to use for DNS requests]':'<address>' \
+  --mail-auth'[Originator address of the original email]':'<address>' \
+  --noproxy'[List of hosts which do not use proxy]':'<no-proxy-list>' \
+  --output-dir'[Directory to save files in]':'<dir>':'_path_files -/' \
+  --parallel-max-host'[Maximum connections to a single host]':'<num>' \
+  --proto-redir'[Enable/disable PROTOCOLS on redirect]':'<protocols>' \
+  --proxy-cert'[Set client certificate for proxy]':'<cert[\:passwd]>' \
+  --proxy-ssl-allow-beast'[Allow this security flaw for HTTPS proxy]' \
+  --trace-config'[Details to log in trace/verbose output]':'<string>' \
+  --dns-interface'[Interface to use for DNS requests]':'<interface>' \
+  --dump-ca-embed'[Write the embedded CA bundle to standard output]' \
+  --keepalive-time'[Interval time for keepalive probes]':'<seconds>' \
+  --random-file'[File for reading random data from]':'<file>':_files \
+  --cacert'[CA certificate to verify peer against]':'<file>':_files \
+  --ignore-content-length'[Ignore the size of the remote resource]' \
+  --keepalive-cnt'[Maximum number of keepalive probes]':'<integer>' \
+  --preproxy'[Use this proxy first]':'<[protocol\://]host[\:port]>' \
+  --proxy-header'[Pass custom header(s) to proxy]':'<header/@file>' \
+  --proxy-ssl-auto-client-cert'[Auto client certificate for proxy]' \
+  --retry-connrefused'[Retry on connection refused (with --retry)]' \
+  {-H,--header}'[Pass custom header(s) to server]':'<header/@file>' \
+  --connect-timeout'[Maximum time allowed to connect]':'<seconds>' \
+  --curves'[(EC) TLS key exchange algorithms to request]':'<list>' \
+  --proxy-negotiate'[HTTP Negotiate (SPNEGO) auth with the proxy]' \
+  --rate'[Request rate for serial transfers]':'<max request rate>' \
+  --socks4a'[SOCKS4a proxy on given host + port]':'<host[\:port]>' \
+  --ssl-auto-client-cert'[Use auto client certificate (Schannel)]' \
+  {-m,--max-time}'[Maximum time allowed for transfer]':'<seconds>' \
+  {-o,--output}'[Write to file instead of stdout]':'<file>':_files \
+  --cert-type'[Certificate type (DER/PEM/ENG/PROV/P12)]':'<type>' \
+  --happy-eyeballs-timeout-ms'[Time for IPv6 before IPv4]':'<ms>' \
+  --proxy1.0'[Use HTTP/1.0 proxy on given port]':'<host[\:port]>' \
+  --ssl-revoke-best-effort'[Ignore missing cert CRL dist points]' \
+  {-O,--remote-name}'[Write output to file named as remote file]' \
+  {-R,--remote-time}'[Set remote file'\''s time on local output]' \
+  {-U,--proxy-user}'[Proxy user and password]':'<user\:password>' \
+  {-Y,--speed-limit}'[Stop transfers slower than this]':'<speed>' \
+  {-z,--time-cond}'[Transfer based on a time condition]':'<time>' \
+  --doh-cert-status'[Verify DoH server cert status OCSP-staple]' \
+  --ftp-ssl-control'[Require TLS for login, clear for transfer]' \
+  --hostpubmd5'[Acceptable MD5 hash of host public key]':'<md5>' \
+  --hsts'[Enable HSTS with this cache file]':'<filename>':_files \
+  --http2-prior-knowledge'[Use HTTP/2 without HTTP/1.1 Upgrade]' \
+  --ip-tos'[Set IP Type of Service or Traffic Class]':'<string>' \
+  --local-port'[Use a local port number within RANGE]':'<range>' \
+  --pinnedpubkey'[Public key to verify peer against]':'<hashes>' \
+  --proxy-ca-native'[Load CA certs from the OS to verify proxy]' \
+  --proxy-tlspassword'[TLS password for HTTPS proxy]':'<string>' \
+  --socks4'[SOCKS4 proxy on given host + port]':'<host[\:port]>' \
+  --socks5'[SOCKS5 proxy on given host + port]':'<host[\:port]>' \
+  {-A,--user-agent}'[Send User-Agent <name> to server]':'<name>' \
+  {-r,--range}'[Retrieve only the bytes within RANGE]':'<range>' \
+  --egd-file'[EGD socket path for random data]':'<file>':_files \
+  --proxy-tls13-ciphers'[TLS 1.3 proxy cipher suites]':'<list>' \
+  --retry-max-time'[Retry only within this period]':'<seconds>' \
+  --skip-existing'[Skip download if local file already exists]' \
+  {-J,--remote-header-name}'[Use the header-provided filename]' \
+  {-w,--write-out}'[Output FORMAT after completion]':'<format>' \
+  {-x,--proxy}'[Use this proxy]':'<[protocol\://]host[\:port]>' \
+  --proxy-key-type'[Private key file type for proxy]':'<type>' \
+  --retry'[Retry request if transient problems occur]':'<num>' \
+  --ssl-no-revoke'[Disable cert revocation checks (Schannel)]' \
+  --create-dirs'[Create necessary local directory hierarchy]' \
+  --haproxy-protocol'[Send HAProxy PROXY protocol v1 header]' \
+  --max-redirs'[Maximum number of redirects allowed]':'<num>' \
+  --proxy-crlfile'[Set a CRL list for proxy]':'<file>':_files \
+  --socks5-basic'[Username/password auth for SOCKS5 proxies]' \
+  --socks5-gssapi-nec'[Compatibility with NEC SOCKS5 server]' \
+  --ssl-allow-beast'[Allow security flaw to improve interop]' \
+  --create-file-mode'[File mode for created files]':'<mode>' \
+  --ftp-create-dirs'[Create the remote dirs if not present]' \
+  --key-type'[Private key file type (DER/PEM/ENG)]':'<type>' \
+  --netrc-file'[Specify FILE for netrc]':'<filename>':_files \
+  --proxy-service-name'[SPNEGO proxy service name]':'<name>' \
+  --trace-ids'[Transfer + connection ids in verbose output]' \
+  {-N,--no-buffer}'[Disable buffering of the output stream]' \
+  {-n,--netrc}'[Must read .netrc for username and password]' \
+  {-u,--user}'[Server user and password]':'<user\:password>' \
+  --fail-with-body'[Fail on HTTP errors but save the body]' \
+  --haproxy-clientip'[Set address in HAProxy PROXY]':'<ip>' \
+  --max-filesize'[Maximum file size to download]':'<bytes>' \
+  --negotiate'[Use HTTP Negotiate (SPNEGO) authentication]' \
+  --no-clobber'[Do not overwrite files that already exist]' \
+  --no-keepalive'[Disable TCP keepalive on the connection]' \
+  --remote-name-all'[Use the remote filename for all URLs]' \
+  --socks5-gssapi'[Enable GSS-API auth for SOCKS5 proxies]' \
+  --tls-earlydata'[Allow use of TLSv1.3 early data (0RTT)]' \
+  {-#,--progress-bar}'[Display transfer progress as a bar]' \
+  --crlfile'[Certificate Revocation list]':'<file>':_files \
+  --data-raw'[HTTP POST data, '\''@'\'' allowed]':'<data>' \
+  --krb'[Enable Kerberos with security <level>]':'<level>' \
+  --proxy-tlsuser'[TLS username for HTTPS proxy]':'<name>' \
+  --styled-output'[Enable styled output for HTTP headers]' \
+  --tls13-ciphers'[TLS 1.3 cipher suites to use]':'<list>' \
+  {-C,--continue-at}'[Resumed transfer offset]':'<offset>' \
+  {-K,--config}'[Read config from a file]':'<file>':_files \
+  {-P,--ftp-port}'[Send PORT instead of PASV]':'<address>' \
+  --ciphers'[TLS 1.2 (1.1, 1.0) ciphers to use]':'<list>' \
+  --data-urlencode'[HTTP POST data URL encoded]':'<data>' \
+  --delegation'[GSS-API delegation permission]':'<LEVEL>' \
+  --doh-insecure'[Allow insecure DoH server connections]' \
+  --knownhosts'[Specify knownhosts path]':'<file>':_files \
+  --mail-rcpt-allowfails'[Allow RCPT TO command to fail]' \
+  --proxy-anyauth'[Pick any proxy authentication method]' \
+  --trace-time'[Add time stamps to trace/verbose output]' \
+  {-g,--globoff}'[Disable URL globbing with {} and \[\]]' \
+  {-p,--proxytunnel}'[HTTP proxy tunnel (using CONNECT)]' \
+  --cert-status'[Verify server cert status OCSP-staple]' \
+  --disallow-username-in-url'[Disallow username in URL]' \
+  --dns-servers'[DNS server addrs to use]':'<addresses>' \
+  --limit-rate'[Limit transfer speed to RATE]':'<speed>' \
+  --path-as-is'[Do not squash .. sequences in URL path]' \
+  --post301'[Do not switch to GET after a 301 redirect]' \
+  --post302'[Do not switch to GET after a 302 redirect]' \
+  --post303'[Do not switch to GET after a 303 redirect]' \
+  --proxy-basic'[Use Basic authentication on the proxy]' \
+  --proxy-insecure'[Skip HTTPS proxy cert verification]' \
+  --retry-delay'[Wait time between retries]':'<seconds>' \
+  --trace'[Write a debug trace to FILE]':'<file>':_files \
+  {-G,--get}'[Put the post data in the URL and use GET]' \
+  {-f,--fail}'[Fail fast with no output on HTTP errors]' \
+  {-i,--show-headers}'[Show response headers in output]' \
+  --doh-url'[Resolve hostnames over DoH]':'<URL>':_urls \
+  --etag-compare'[Load ETag from file]':'<file>':_files \
+  --ftp-ssl-ccc-mode'[Set CCC mode]':'<active/passive>' \
+  --metalink'[Process given URLs as metalink XML file]' \
+  --no-progress-meter'[Do not show the progress meter]' \
+  --retry-all-errors'[Retry all errors (with --retry)]' \
+  --sigalgs'[TLS signature algorithms to use]':'<list>' \
+  --tr-encoding'[Request compressed transfer encoding]' \
+  --xattr'[Store metadata in extended file attributes]' \
+  {-a,--append}'[Append to target file when uploading]' \
+  --parallel-immediate'[Do not wait for multiplexing]' \
+  --sasl-ir'[Initial response in SASL authentication]' \
+  --stderr'[Where to redirect stderr]':'<file>':_files \
+  --tls-max'[Maximum allowed TLS version]':'<VERSION>' \
+  {-S,--show-error}'[Show error even when -s is used]' \
+  {-k,--insecure}'[Allow insecure server connections]' \
+  --form-escape'[Escape form fields using backslash]' \
+  --form-string'[Specify multipart MIME data]':'<name=string>' \
+  --login-options'[Server login options]':'<options>' \
+  --pass'[Passphrase for the private key]':'<phrase>' \
+  --tftp-blksize'[Set TFTP BLKSIZE option]':'<value>' \
+  {-v,--verbose}'[Make the operation more talkative]' \
+  --ftp-skip-pasv-ip'[Skip the IP address for PASV]' \
+  --ntlm-wb'[HTTP NTLM authentication with winbind]' \
+  --proxy-key'[Private key for HTTPS proxy]':'<key>' \
+  --proxy-ntlm'[NTLM authentication with the proxy]' \
+  --mail-from'[Mail from this address]':'<address>' \
+  --oauth2-bearer'[OAuth 2 Bearer Token]':'<token>' \
+  --out-null'[Discard response data into the void]' \
+  --proto'[Enable/disable PROTOCOLS]':'<protocols>' \
+  --remove-on-error'[Remove output file on errors]' \
+  --tftp-no-options'[Do not send any TFTP options]' \
+  --tlsauthtype'[TLS authentication type]':'<type>' \
+  --vlan-priority'[Set VLAN priority]':'<priority>' \
+  {-:,--next}'[Make next URL use separate options]' \
+  {-F,--form}'[Specify multipart MIME data]':'<name=content>' \
+  --ipfs-gateway'[Gateway for IPFS]':'<URL>':_urls \
+  --no-sessionid'[Disable SSL session-ID reusing]' \
+  --upload-flags'[IMAP upload behavior]':'<flags>' \
+  {-Z,--parallel}'[Perform transfers in parallel]' \
+  {-h,--help}'[Get help for commands]':'<subject>' \
+  --data-binary'[HTTP POST binary data]':'<data>' \
+  --mail-rcpt'[Mail to this address]':'<address>' \
+  {-t,--telnet-option}'[Set telnet option]':'<opt=val>' \
+  --ftp-ssl-ccc'[Send CCC after authenticating]' \
+  --service-name'[SPNEGO service name]':'<name>' \
+  {-4,--ipv4}'[Resolve names to IPv4 addresses]' \
+  {-6,--ipv6}'[Resolve names to IPv6 addresses]' \
+  {-V,--version}'[Show version number and quit]' \
+  --data-ascii'[HTTP POST ASCII data]':'<data>' \
+  --ftp-account'[Account data string]':'<data>' \
+  --interface'[Use network interface]':'<name>' \
+  --disable-eprt'[Inhibit using EPRT or LPRT]' \
+  --fail-early'[Fail on first transfer error]' \
+  --ftp-pasv'[Send PASV/EPSV instead of PORT]' \
+  --netrc-optional'[Use either .netrc or URL]' \
+  --proxy-digest'[Digest auth with the proxy]' \
+  --proxy-http2'[Use HTTP/2 with HTTPS proxy]' \
+  --url-query'[Add a URL query part]':'<data>' \
+  {-e,--referer}'[Referrer URL]':'<URL>':_urls \
+  --anyauth'[Pick any authentication method]' \
+  --compressed'[Request compressed response]' \
+  --no-alpn'[Disable the ALPN TLS extension]' \
+  --pubkey'[SSH Public key filename]':'<key>' \
+  {-B,--use-ascii}'[Use ASCII/text transfer]' \
+  --compressed-ssh'[Enable SSH compression]' \
+  --raw'[Do HTTP raw; no transfer decoding]' \
+  --engine'[Crypto engine to use]':'<name>' \
+  --no-npn'[Disable the NPN TLS extension]' \
+  --url'[URL(s) to work with]':'<url/file>' \
+  --ca-native'[Load CA certs from the OS]' \
+  --tlspassword'[TLS password]':'<string>' \
+  {-M,--manual}'[Display the full manual]' \
+  --false-start'[Enable TLS False Start]' \
+  --crlf'[Convert LF to CRLF in upload]' \
+  --digest'[HTTP Digest Authentication]' \
+  --proxy-tlsv1'[TLSv1 for HTTPS proxy]' \
+  {-I,--head}'[Show document info only]' \
+  {-d,--data}'[HTTP POST data]':'<data>' \
+  --follow'[Follow redirects per spec]' \
+  --http0.9'[Allow HTTP/0.9 responses]' \
+  --key'[Private key filename]':'<key>' \
+  --basic'[HTTP Basic Authentication]' \
+  --disable-epsv'[Inhibit using EPSV]' \
+  --variable'[Set variable]':'<[%]name=text/@file>' \
+  --ftp-pret'[Send PRET before PASV]' \
+  --tcp-fastopen'[Use TCP Fast Open]' \
+  {-L,--location}'[Follow redirects]' \
+  --ntlm'[HTTP NTLM authentication]' \
+  --tlsuser'[TLS username]':'<name>' \
+  {-1,--tlsv1}'[TLSv1.0 or greater]' \
+  {-l,--list-only}'[List only mode]' \
+  --ech'[Configure ECH]':'<config>' \
+  --json'[HTTP POST JSON]':'<data>' \
+  {-q,--disable}'[Disable .curlrc]' \
+  --tcp-nodelay'[Set TCP_NODELAY]' \
+  --http3-only'[Use HTTP/3 only]' \
+  --mptcp'[Enable Multipath TCP]' \
+  --tlsv1.0'[TLSv1.0 or greater]' \
+  --tlsv1.1'[TLSv1.1 or greater]' \
+  --tlsv1.2'[TLSv1.2 or greater]' \
+  --tlsv1.3'[TLSv1.3 or greater]' \
+  {-0,--http1.0}'[Use HTTP/1.0]' \
+  --ssl-reqd'[Require SSL/TLS]' \
+  {-s,--silent}'[Silent mode]' \
+  --http1.1'[Use HTTP/1.1]' \
+  --ssl'[Try enabling TLS]' \
+  --http2'[Use HTTP/2]' \
+  --http3'[Use HTTP/3]' \
+  {-2,--sslv2}'[SSLv2]' \
+  {-3,--sslv3}'[SSLv3]' \
+  '*:URL:_urls' && rc=0
+
+return rc
