@@ -175,6 +175,7 @@ static int ax206_drm_probe(struct platform_device *pdev)
 	}
 	ax206_drm_set_rotation(d, rotation_param);
 	d->noblank = noblank_param;
+	d->cleared = false;	/* wipe the factory demo image on first use */
 
 	lw = d->lwidth;
 	lh = d->lheight;

@@ -246,34 +246,18 @@ static void ax206_drm_flush(struct ax206_drm_dev *d,
 
 /* ----- Simple pipe callbacks ----- */
 
-void ax206_drm_pipe_enable(struct drm_simple_display_pipe *pipe,
-			 struct drm_crtc_state *crtc_state,
-			 struct drm_plane_state *plane_state)
+/*
+ * ax206_drm_blank() - push a full-screen black frame to the panel
+ *
+ * Zeroes the shadow buffer and marks the entire display dirty so the blit
+ * worker sends a full black frame (every pixel, bypassing the per-pixel delta
+ * skip).  Used both to blank the panel when the pipe closes and to wipe the
+ * factory demo image on first use.
+ */
+static void ax206_drm_blank(struct ax206_drm_dev *d)
 {
-	struct ax206_drm_dev *d = to_ax206_drm(pipe->crtc.dev);
-
-	if (d->idle_active)
-		ax206_idle_leave(d);
-
-	ax206_idle_timer_reset(d);
-}
-
-void ax206_drm_pipe_disable(struct drm_simple_display_pipe *pipe)
-{
-	struct ax206_drm_dev *d = to_ax206_drm(pipe->crtc.dev);
 	unsigned long flags;
 
-	timer_delete_sync(&d->idle_timer);
-	cancel_work_sync(&d->idle_work);
-
-	if (d->noblank || !d->dpf->connected)
-		return;
-
-	/*
-	 * noblank is off: fill display black.  We do this by zeroing the
-	 * shadow buffer and marking the entire screen dirty so the blit
-	 * worker sends the black fill.
-	 */
 	memset(d->shadow_buf, 0, d->shadow_size);
 
 	spin_lock_irqsave(&d->blit_lock, flags);
@@ -288,6 +272,45 @@ void ax206_drm_pipe_disable(struct drm_simple_display_pipe *pipe)
 		queue_work(d->dpf->wq, &d->blit_work);
 	}
 	spin_unlock_irqrestore(&d->blit_lock, flags);
+}
+
+void ax206_drm_pipe_enable(struct drm_simple_display_pipe *pipe,
+			 struct drm_crtc_state *crtc_state,
+			 struct drm_plane_state *plane_state)
+{
+	struct ax206_drm_dev *d = to_ax206_drm(pipe->crtc.dev);
+
+	if (d->idle_active)
+		ax206_idle_leave(d);
+
+	/*
+	 * First use after the driver loaded: the panel still shows the factory
+	 * demo image while our shadow buffer is all black.  pipe_update only
+	 * sends pixels that differ from the shadow, so black areas of the first
+	 * frame would never be sent and the demo would show through wherever
+	 * content has not been drawn yet.  Push one full black frame to
+	 * establish a known (black) baseline that matches the shadow buffer.
+	 */
+	if (!d->cleared && d->dpf->connected) {
+		d->cleared = true;
+		ax206_drm_blank(d);
+	}
+
+	ax206_idle_timer_reset(d);
+}
+
+void ax206_drm_pipe_disable(struct drm_simple_display_pipe *pipe)
+{
+	struct ax206_drm_dev *d = to_ax206_drm(pipe->crtc.dev);
+
+	timer_delete_sync(&d->idle_timer);
+	cancel_work_sync(&d->idle_work);
+
+	/* noblank is off: blank the panel to black on pipe close. */
+	if (d->noblank || !d->dpf->connected)
+		return;
+
+	ax206_drm_blank(d);
 }
 
 void ax206_drm_pipe_update(struct drm_simple_display_pipe *pipe,

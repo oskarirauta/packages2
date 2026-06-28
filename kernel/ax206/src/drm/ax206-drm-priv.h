@@ -85,6 +85,14 @@ struct ax206_drm_dev {
 	bool				noblank;
 
 	/*
+	 * cleared: set once the panel has been blanked for the first time.
+	 * The panel powers up showing a factory demo image while the shadow
+	 * buffer starts all black, so the first use must push a full black
+	 * frame to wipe the demo before any partial content is drawn.
+	 */
+	bool				cleared;
+
+	/*
 	 * Coalescing blit engine.
 	 *
 	 * blit_work is a single persistent work item.  When new damage
