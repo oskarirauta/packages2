@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=systembus
-PKG_VERSION:=2.2.1
+PKG_VERSION:=3.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/oskarirauta/$(PKG_NAME)/releases/download/$(PKG_VERSION)/
-PKG_HASH:=8c5ac8c92a283a7a7b3cdf9ec27661be792c5ecc420ece0c10a6cacc44aca6eb
+PKG_HASH:=6f30bca062b441b6165b19f050a9574d91cba6999a7622143fcb398b4f2c90fc
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=MIT
