@@ -1,0 +1,10 @@
+{
+	"luci-mod-status-uxc": {
+		"description": "Grant access to uxc",
+		"read": {
+			"ubus": {
+				"container": [ "list" ]
+			}
+		}
+	}
+}
