@@ -20,17 +20,13 @@ PKG_FIXUP:=autoreconf
 include $(INCLUDE_DIR)/package.mk
 
 CONFIGURE_ARGS += \
-	--without-libyaml \
-	--without-libjansson \
-	--without-libxml2 \
-	--without-libseccomp \
 	--disable-pcre2
 
 define Package/universal-ctags
   SECTION:=devel
   CATEGORY:=Development
   TITLE:=Universal ctags - maintained ctags implementation
-  DEPENDS:=+jansson4 +libseccomp +libxml2 +libyaml
+  DEPENDS:=+jansson +libseccomp +libxml2 +libyaml
   URL:=https://ctags.io
 endef
 
