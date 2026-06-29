@@ -1,0 +1,10 @@
+{
+	"luci-mod-status-containers": {
+		"description": "Grant access to upodman",
+		"read": {
+			"ubus": {
+				"podman": [ "list", "exec" ]
+			}
+		}
+	}
+}
