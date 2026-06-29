@@ -27,12 +27,12 @@ function cpu_progressbar(value) {
 }
 
 function cpu_temperaturebar(value) {
-        var vn = parseInt(value) || 0;
+	var vn = parseInt(value) || 0;
 
-        return E('div', {
-                'class': 'cbi-progressbar',
-                'title': '+%s C'.format(vn)
-        }, E('div', { 'style': 'width:%.2f%%'.format(vn) }));
+	return E('div', {
+		'class': 'cbi-progressbar',
+		'title': '+%s C'.format(vn)
+	}, E('div', { 'style': 'width:%.2f%%'.format(vn) }));
 }
 
 return baseclass.extend({
@@ -48,11 +48,11 @@ return baseclass.extend({
 
 	render: function(data) {
 
-		var cpuinfo	= data[0],
-		    cputemp     = data[1],
-		    systeminfo2	= data[2];
+		var cpuinfo    = data[0],
+		    cputemp    = data[1],
+		    systeminfo = data[2];
 
-		if ( !systeminfo2.systembus_loaded )
+		if (!systeminfo.systembus_loaded)
 			return E('table', { 'class': 'table' }, [
 				E('tr', { 'class': 'tr' }, [
 					E('td', { 'class': 'td left', 'width': '100%' }, [
@@ -61,35 +61,37 @@ return baseclass.extend({
 				])]);
 
 		var fields = [
-			_('Temperature'), cputemp.temperature,
-			_('Total'), ( cpuinfo.cpu != null && cpuinfo.cpu1 != null ) ? cpuinfo.cpu : null,
-			'cpu0', cpuinfo.cpu0,
-			'cpu1', cpuinfo.cpu1,
-			'cpu2', cpuinfo.cpu2,
-			'cpu3', cpuinfo.cpu3,
-			'cpu4', cpuinfo.cpu4,
-			'cpu5', cpuinfo.cpu5,
-			'cpu6', cpuinfo.cpu6,
-			'cpu7', cpuinfo.cpu7,
-			'cpu8', cpuinfo.cpu8,
-			'cpu9', cpuinfo.cpu9,
-			'cpu10', cpuinfo.cpu10,
-			'cpu11', cpuinfo.cpu11,
-			'cpu12', cpuinfo.cpu12,
-			'cpu13', cpuinfo.cpu13,
-			'cpu14', cpuinfo.cpu14,
-			'cpu15', cpuinfo.cpu15
+			_('Temperature'), { value: cputemp.temperature, isTemp: true },
+			_('Total'), ( cpuinfo.cpu != null && cpuinfo.cpu1 != null ) ? { value: cpuinfo.cpu } : null,
+			'cpu0',  cpuinfo.cpu0  != null ? { value: cpuinfo.cpu0  } : null,
+			'cpu1',  cpuinfo.cpu1  != null ? { value: cpuinfo.cpu1  } : null,
+			'cpu2',  cpuinfo.cpu2  != null ? { value: cpuinfo.cpu2  } : null,
+			'cpu3',  cpuinfo.cpu3  != null ? { value: cpuinfo.cpu3  } : null,
+			'cpu4',  cpuinfo.cpu4  != null ? { value: cpuinfo.cpu4  } : null,
+			'cpu5',  cpuinfo.cpu5  != null ? { value: cpuinfo.cpu5  } : null,
+			'cpu6',  cpuinfo.cpu6  != null ? { value: cpuinfo.cpu6  } : null,
+			'cpu7',  cpuinfo.cpu7  != null ? { value: cpuinfo.cpu7  } : null,
+			'cpu8',  cpuinfo.cpu8  != null ? { value: cpuinfo.cpu8  } : null,
+			'cpu9',  cpuinfo.cpu9  != null ? { value: cpuinfo.cpu9  } : null,
+			'cpu10', cpuinfo.cpu10 != null ? { value: cpuinfo.cpu10 } : null,
+			'cpu11', cpuinfo.cpu11 != null ? { value: cpuinfo.cpu11 } : null,
+			'cpu12', cpuinfo.cpu12 != null ? { value: cpuinfo.cpu12 } : null,
+			'cpu13', cpuinfo.cpu13 != null ? { value: cpuinfo.cpu13 } : null,
+			'cpu14', cpuinfo.cpu14 != null ? { value: cpuinfo.cpu14 } : null,
+			'cpu15', cpuinfo.cpu15 != null ? { value: cpuinfo.cpu15 } : null
 		];
 
 		var table = E('table', { 'class': 'table' });
 
 		for (var i = 0; i < fields.length; i += 2) {
 
-			if ( fields[i + 1 ] == null ) continue;
+			if (fields[i + 1] == null) continue;
+
+			var entry = fields[i + 1];
 
 			table.appendChild(E('tr', { 'class': 'tr' }, [
 				E('td', { 'class': 'td left', 'width': '33%' }, [ fields[i] ]),
-				E('td', { 'class': 'td left' }, [ fields[i] == _('Temperature') ? cpu_temperaturebar(fields[i + 1]) : cpu_progressbar(fields[i + 1]) ])
+				E('td', { 'class': 'td left' }, [ entry.isTemp ? cpu_temperaturebar(entry.value) : cpu_progressbar(entry.value) ])
 			]));
 		}
 

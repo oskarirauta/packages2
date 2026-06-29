@@ -1,0 +1,10 @@
+{
+	"luci-mod-status-cpu": {
+		"description": "Grant access to cpu load display",
+		"read": {
+			"ubus": {
+				"system.cpu": [ "list", "temp", "temperature" ]
+			}
+		}
+	}
+}
