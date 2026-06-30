@@ -1,0 +1,11 @@
+{
+	"luci-mod-status-extended": {
+		"description": "Grant access to extended system status information",
+		"read": {
+			"ubus": {
+				"system.security": [ "list" ],
+				"system.info": [ "list" ]
+			}
+		}
+	}
+}
